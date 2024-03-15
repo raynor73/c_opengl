@@ -2,6 +2,7 @@
 #include "logger.h"
 #include <glib.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define INFO_BUFFER_SIZE 1024
 
@@ -52,7 +53,9 @@ void opengl_error_detector_init() {
 
 void check_opengl_errors(const char *location_name) {
 	GLenum error_code = glGetError();
+	bool is_error_detected = false;
     while (error_code != GL_NO_ERROR) {
+		is_error_detected = true;
 		if (g_hash_table_contains(opengl_error_map, &error_code)) {
 			const char *error_text = g_hash_table_lookup(opengl_error_map, &error_code);
 			log_error("OpenGL error detected at %s: %s\n", location_name, error_text);
@@ -63,7 +66,9 @@ void check_opengl_errors(const char *location_name) {
         error_code = glGetError();
     }
 
-    error("OpenGL error detected, exiting.\n");
+	if (is_error_detected) {
+		error("OpenGL error detected, exiting.\n");
+	}
 }
 
 void check_shader_compilation_error(GLuint shader, const char *location_name) {
