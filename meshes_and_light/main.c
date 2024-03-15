@@ -79,10 +79,19 @@ int main(int argc, char **argv) {
 	
 
 
+	GLuint vertex_array;
+    glGenVertexArrays(1, &vertex_array);
+    glBindVertexArray(vertex_array);
+    
     GLuint vertex_buffer;
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUMBER_OF_VERTICES, vertices, GL_STATIC_DRAW);
+    
+    GLuint index_buffer;
+    glGenBuffers(1, &index_buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * NUMBER_OF_INDICES, indices, GL_STATIC_DRAW);
      
     const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
@@ -105,9 +114,7 @@ int main(int argc, char **argv) {
     const GLint vcol_location = glGetAttribLocation(program, "vCol");
     check_opengl_errors("getting uniform and attribute locations");
 
-    GLuint vertex_array;
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
+    /**/
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, position));
@@ -115,11 +122,6 @@ int main(int argc, char **argv) {
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, color));
     check_opengl_errors("vertex attributes initialization");
-                          
-    GLuint index_buffer;
-    glGenBuffers(1, &index_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * NUMBER_OF_INDICES, indices, GL_STATIC_DRAW);
 
 
 
@@ -140,7 +142,6 @@ int main(int argc, char **argv) {
 		
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
-        glBindVertexArray(vertex_array);
         glDrawElements(GL_TRIANGLES, NUMBER_OF_INDICES, GL_UNSIGNED_SHORT, NULL);
         check_opengl_errors("rendering");
 		
