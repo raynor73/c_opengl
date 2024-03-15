@@ -9,11 +9,11 @@ Mesh *mesh_new(uint32_t number_of_vertices, uint32_t number_of_indices) {
 		error("Failed to allocate memory for mesh\n");
 	}
 	
-	size_t size_of_vertices_buffer = sizeof(Vertex) * mesh->number_of_vertices;
-	size_t size_of_indices_buffer = sizeof(uint16_t) * mesh->number_of_indices;
-	
 	mesh->number_of_vertices = number_of_vertices;
 	mesh->number_of_indices = number_of_indices;
+	
+	size_t size_of_vertices_buffer = sizeof(Vertex) * mesh->number_of_vertices;
+	size_t size_of_indices_buffer = sizeof(uint16_t) * mesh->number_of_indices;
 	
 	mesh->vertices = (Vertex *) malloc(size_of_vertices_buffer);
 	if (mesh->vertices == NULL) {

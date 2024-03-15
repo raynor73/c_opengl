@@ -6,6 +6,7 @@
 #include <cglm/cglm.h>
 #include "opengl_error_detector.h"
 #include "vertex.h"
+#include "mesh.h"
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
@@ -17,14 +18,16 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
 }
 
-#define NUMBER_OF_VERTICES 3
+static Mesh *mesh;
+
+/*#define NUMBER_OF_VERTICES 3
 static Vertex vertices[NUMBER_OF_VERTICES] = {
 	{ { -0.6, -0.4, 0.0 }, { 0.0, 0.0, -1.0 }, { 1.0, 0.0, 0.0 } },
     { {  0.6, -0.4, 0.0 }, { 0.0, 0.0, -1.0 }, { 0.f, 1.f, 0.f } },
     { {  0.0,  0.6, 0.0 }, { 0.0, 0.0, -1.0 }, { 0.f, 0.f, 1.f } }	
 };
 #define NUMBER_OF_INDICES 3
-static uint16_t indices[NUMBER_OF_INDICES] = { 0, 1, 2 };
+static uint16_t indices[NUMBER_OF_INDICES] = { 0, 1, 2 };*/
 
 static const char* vertex_shader_text =
 "#version 330\n"
@@ -47,8 +50,56 @@ static const char* fragment_shader_text =
 "    fragment = vec4(color, 1.0);\n"
 "}\n";
 
+static void init_geometry() {
+	mesh = mesh_new(3, 3);
+	
+	// Vertex 1
+	mesh->vertices[0].position[0] = -0.6;
+	mesh->vertices[0].position[1] = -0.4;
+	mesh->vertices[0].position[2] = 0.0;
+	
+	mesh->vertices[0].normal[0] = 0.0;
+	mesh->vertices[0].normal[1] = 0.0;
+	mesh->vertices[0].normal[2] = -1.0;
+	
+	mesh->vertices[0].color[0] = 1.0;
+	mesh->vertices[0].color[1] = 0.0;
+	mesh->vertices[0].color[2] = 0.0;
+	
+	// Vertex 2
+	mesh->vertices[1].position[0] = 0.6;
+	mesh->vertices[1].position[1] = -0.4;
+	mesh->vertices[1].position[2] = 0.0;
+	
+	mesh->vertices[1].normal[0] = 0.0;
+	mesh->vertices[1].normal[1] = 0.0;
+	mesh->vertices[1].normal[2] = -1.0;
+	
+	mesh->vertices[1].color[0] = 0.0;
+	mesh->vertices[1].color[1] = 1.0;
+	mesh->vertices[1].color[2] = 0.0;
+	
+	// Vertex 3
+	mesh->vertices[2].position[0] = 0.0;
+	mesh->vertices[2].position[1] = 0.6;
+	mesh->vertices[2].position[2] = 0.0;
+	
+	mesh->vertices[2].normal[0] = 0.0;
+	mesh->vertices[2].normal[1] = 0.0;
+	mesh->vertices[2].normal[2] = -1.0;
+	
+	mesh->vertices[2].color[0] = 0.0;
+	mesh->vertices[2].color[1] = 0.0;
+	mesh->vertices[2].color[2] = 1.0;
+	
+	mesh->indices[0] = 0;
+	mesh->indices[1] = 1;
+	mesh->indices[2] = 2;
+}
+
 int main(int argc, char **argv) {
 	opengl_error_detector_init();
+	init_geometry();
 
 	GLFWwindow* window;
 
@@ -77,6 +128,10 @@ int main(int argc, char **argv) {
 	glfwSetKeyCallback(window, key_callback);
 	glfwSwapInterval(1);
 	
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+    glEnable(GL_DEPTH_TEST);
+	
 
 
 	GLuint vertex_array;
@@ -86,12 +141,12 @@ int main(int argc, char **argv) {
     GLuint vertex_buffer;
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * NUMBER_OF_VERTICES, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh->number_of_vertices, mesh->vertices, GL_STATIC_DRAW);
     
     GLuint index_buffer;
     glGenBuffers(1, &index_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * NUMBER_OF_INDICES, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * mesh->number_of_indices, mesh->indices, GL_STATIC_DRAW);
      
     const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
@@ -114,9 +169,8 @@ int main(int argc, char **argv) {
     const GLint vcol_location = glGetAttribLocation(program, "vCol");
     check_opengl_errors("getting uniform and attribute locations");
 
-    /**/
     glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, position));
     glEnableVertexAttribArray(vcol_location);
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
@@ -132,17 +186,18 @@ int main(int argc, char **argv) {
         const float ratio = width / (float) height;
  
         glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
         mat4 p, mvp;
         mat4 m = GLM_MAT4_IDENTITY_INIT;
-        glm_rotate_z(m, glfwGetTime(), m);
-        glm_ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f, p);
+        glm_translate_z(m, -2);
+        glm_rotate_y(m, glfwGetTime(), m);
+        glm_perspective(glm_rad(90), ratio, 0.1, 1000, p);
         glm_mat4_mul(p, m, mvp);
 		
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
-        glDrawElements(GL_TRIANGLES, NUMBER_OF_INDICES, GL_UNSIGNED_SHORT, NULL);
+        glDrawElements(GL_TRIANGLES, mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
         check_opengl_errors("rendering");
 		
 
