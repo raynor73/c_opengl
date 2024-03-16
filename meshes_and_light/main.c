@@ -32,22 +32,34 @@ static uint16_t indices[NUMBER_OF_INDICES] = { 0, 1, 2 };*/
 static const char* vertex_shader_text =
 "#version 330\n"
 "uniform mat4 MVP;\n"
+"uniform mat4 model_matrix;\n"
 "in vec3 vCol;\n"
 "in vec3 vPos;\n"
+"in vec3 normal;\n"
 "out vec3 color;\n"
+"out vec3 normal_varying;\n"
 "void main()\n"
 "{\n"
 "    gl_Position = MVP * vec4(vPos, 1.0);\n"
 "    color = vCol;\n"
+"	 normal_varying = (model_matrix * vec4(normal, 0.0)).xyz;\n"
 "}\n";
 
 static const char* fragment_shader_text =
 "#version 330\n"
+"struct DirectionalLight {\n"
+"    vec3 color;\n"
+"    vec3 direction;\n"
+"};\n"
+"uniform DirectionalLight directional_light;\n"
+"in vec3 normal;\n"
 "in vec3 color;\n"
 "out vec4 fragment;\n"
 "void main()\n"
 "{\n"
-"    fragment = vec4(color, 1.0);\n"
+"	fragment =\n"
+"            vec4(color, 1.0) * vec4(directional_light.color, 1.0) *\n"
+"            dot(normalize(normal), -directional_light.direction);\n"
 "}\n";
 
 static void init_geometry() {
@@ -165,8 +177,12 @@ int main(int argc, char **argv) {
     check_shader_linking_error(program, "shader program");
  
     const GLint mvp_location = glGetUniformLocation(program, "MVP");
+    const GLint model_matrix_location = glGetUniformLocation(program, "model_matrix");
+    const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
+    const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
     const GLint vpos_location = glGetAttribLocation(program, "vPos");
     const GLint vcol_location = glGetAttribLocation(program, "vCol");
+    const GLint normal_location = glGetAttribLocation(program, "normal");
     check_opengl_errors("getting uniform and attribute locations");
 
     glEnableVertexAttribArray(vpos_location);
@@ -175,10 +191,14 @@ int main(int argc, char **argv) {
     glEnableVertexAttribArray(vcol_location);
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, color));
+    glEnableVertexAttribArray(normal_location);
+    glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE,
+                          sizeof(Vertex), (void*) offsetof(Vertex, normal));
     check_opengl_errors("vertex attributes initialization");
 
 
-
+	vec3 directional_light_direction = { -1, 0, 1 };
+	glm_vec3_normalize(directional_light_direction);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
 		int width, height;
@@ -197,6 +217,11 @@ int main(int argc, char **argv) {
 		
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
+        
+        glUniformMatrix4fv(model_matrix_location, 1, GL_FALSE, m[0]);
+        glUniform3f(directional_light_color_location, 1, 1, 1);
+        glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
+        
         glDrawElements(GL_TRIANGLES, mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
         check_opengl_errors("rendering");
 		
