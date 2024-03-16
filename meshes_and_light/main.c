@@ -52,14 +52,14 @@ static const char* fragment_shader_text =
 "    vec3 direction;\n"
 "};\n"
 "uniform DirectionalLight directional_light;\n"
-"in vec3 normal;\n"
+"in vec3 normal_varying;\n"
 "in vec3 color;\n"
 "out vec4 fragment;\n"
 "void main()\n"
 "{\n"
 "	fragment =\n"
 "            vec4(color, 1.0) * vec4(directional_light.color, 1.0) *\n"
-"            dot(normalize(normal), -directional_light.direction);\n"
+"            dot(normalize(normal_varying), -directional_light.direction);\n"
 "}\n";
 
 static void init_geometry() {

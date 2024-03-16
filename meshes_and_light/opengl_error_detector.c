@@ -43,11 +43,11 @@ void opengl_error_detector_init() {
 	framebuffer_status_map = g_hash_table_new(g_int_hash, g_int_equal);
 
 	for (int i = 0; i < sizeof(opengl_error_codes) / sizeof(GLenum); i++) {
-		g_hash_table_insert(opengl_error_map, &opengl_error_codes[0], &opengl_errors[0]);
+		g_hash_table_insert(opengl_error_map, &opengl_error_codes[i], (gpointer) opengl_errors[i]);
 	}
 
 	for (int i = 0; i < sizeof(framebuffer_status_codes) / sizeof(GLenum); i++) {
-		g_hash_table_insert(framebuffer_status_map, &framebuffer_status_codes[0], &framebuffer_statuses[0]);
+		g_hash_table_insert(framebuffer_status_map, &framebuffer_status_codes[i], (gpointer) framebuffer_statuses[i]);
 	}
 }
 
