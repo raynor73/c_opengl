@@ -57,7 +57,9 @@ static const char* fragment_shader_text =
 "            dot(normalize(normal_varying), -directional_light.direction);\n"
 "}\n";
 
-static const C_STRUCT aiScene *scene = NULL;
+#define NUMBER_OF_VERTICES_IN_A_FACE 3
+
+static const struct aiScene *scene = NULL;
 
 static void init_geometry() {
 	mesh = mesh_new(3, 3);
@@ -115,7 +117,92 @@ static void init_geometry() {
 		error("Nothing loaded from box.obj\n");
 	}
 	struct aiMesh *ai_box_mesh = scene->mMeshes[0];
-	box_mesh = mesh_new(ai_box_mesh->mNumVertices, ai_box_mesh->mNumFaces * 3);
+	box_mesh = mesh_new(ai_box_mesh->mNumVertices, ai_box_mesh->mNumFaces * NUMBER_OF_VERTICES_IN_A_FACE);
+	for (int i = 0; i < ai_box_mesh->mNumVertices; i++) {
+		struct aiVector3D *aiVertex = &ai_box_mesh->mVertices[i];
+		struct aiVector3D *aiNormal = &ai_box_mesh->mNormals[i];
+		
+		Vertex *vertex = &box_mesh->vertices[i];
+		vec3 *position = &vertex->position;
+		vec3 *normal = &vertex->normal;
+		vec3 *color = &vertex->color;
+		
+		position[0][0] = aiVertex->x;
+		position[0][1] = aiVertex->y;
+		position[0][2] = aiVertex->z;
+		
+		normal[0][0] = aiNormal->x;
+		normal[0][1] = aiNormal->y;
+		normal[0][2] = aiNormal->z;
+		
+		color[0][0] = 1;
+		color[0][1] = 1;
+		color[0][2] = 1;
+	}
+	
+	for (int i = 0; i < ai_box_mesh->mNumFaces; i++) {
+		struct aiFace *ai_face = &ai_box_mesh->mFaces[i];
+		
+		int base_index = i * NUMBER_OF_VERTICES_IN_A_FACE;
+		
+		box_mesh->indices[base_index] = ai_face->mIndices[0];
+		box_mesh->indices[base_index + 1] = ai_face->mIndices[1];
+		box_mesh->indices[base_index + 2] = ai_face->mIndices[2];
+	}
+}
+
+static GLuint compile_and_link_shader_program(const char *vertex_shader_source, const char *fragment_shader_source) {
+	const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
+    glCompileShader(vertex_shader);
+	check_shader_compilation_error(vertex_shader, "vertex shader");
+ 
+    const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
+    glCompileShader(fragment_shader);
+	check_shader_compilation_error(fragment_shader, "fragment shader");
+ 
+    const GLuint program = glCreateProgram();
+    glAttachShader(program, vertex_shader);
+    glAttachShader(program, fragment_shader);
+    glLinkProgram(program);
+    check_shader_linking_error(program, "shader program");
+    
+    return program;
+} 
+
+static GLuint setup_vao_for_mesh(GLuint program, const Mesh *mesh) {
+	GLuint vertex_array;
+    glGenVertexArrays(1, &vertex_array);
+    glBindVertexArray(vertex_array);
+    
+    GLuint vertex_buffer;
+    glGenBuffers(1, &vertex_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh->number_of_vertices, mesh->vertices, GL_STATIC_DRAW);
+    
+    GLuint index_buffer;
+    glGenBuffers(1, &index_buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * mesh->number_of_indices, mesh->indices, GL_STATIC_DRAW);
+     
+    const GLint vpos_location = glGetAttribLocation(program, "vPos");
+    const GLint vcol_location = glGetAttribLocation(program, "vCol");
+    const GLint normal_location = glGetAttribLocation(program, "normal");
+    check_opengl_errors("getting uniform and attribute locations");
+
+    glEnableVertexAttribArray(vpos_location);
+    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
+                          sizeof(Vertex), (void*) offsetof(Vertex, position));
+    glEnableVertexAttribArray(vcol_location);
+    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+                          sizeof(Vertex), (void*) offsetof(Vertex, color));
+    glEnableVertexAttribArray(normal_location);
+    glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE,
+                          sizeof(Vertex), (void*) offsetof(Vertex, normal));
+    check_opengl_errors("vertex attributes initialization");
+
+	return vertex_array;
 }
 
 int main(int argc, char **argv) {
@@ -155,59 +242,21 @@ int main(int argc, char **argv) {
 	
 
 
-	GLuint vertex_array;
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
+    GLuint program = compile_and_link_shader_program(vertex_shader_text, fragment_shader_text);
     
-    GLuint vertex_buffer;
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh->number_of_vertices, mesh->vertices, GL_STATIC_DRAW);
-    
-    GLuint index_buffer;
-    glGenBuffers(1, &index_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * mesh->number_of_indices, mesh->indices, GL_STATIC_DRAW);
-     
-    const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
-	check_shader_compilation_error(vertex_shader, "vertex shader");
- 
-    const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
-	check_shader_compilation_error(fragment_shader, "fragment shader");
- 
-    const GLuint program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-    check_shader_linking_error(program, "shader program");
- 
     const GLint mvp_location = glGetUniformLocation(program, "MVP");
     const GLint model_matrix_location = glGetUniformLocation(program, "model_matrix");
     const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
     const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
-    const GLint vpos_location = glGetAttribLocation(program, "vPos");
-    const GLint vcol_location = glGetAttribLocation(program, "vCol");
-    const GLint normal_location = glGetAttribLocation(program, "normal");
-    check_opengl_errors("getting uniform and attribute locations");
 
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, position));
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, color));
-    glEnableVertexAttribArray(normal_location);
-    glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, normal));
-    check_opengl_errors("vertex attributes initialization");
+    GLuint vertex_array = setup_vao_for_mesh(program, box_mesh);
+    //GLuint vertex_array = setup_vao_for_mesh(program, mesh);
 
-
-	vec3 directional_light_direction = { -1, 0, 1 };
+	vec3 directional_light_direction = { 0, 0, -1 };
 	glm_vec3_normalize(directional_light_direction);
+	
+	
+	
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
 		int width, height;
@@ -225,13 +274,14 @@ int main(int argc, char **argv) {
         glm_mat4_mul(p, m, mvp);
 		
         glUseProgram(program);
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
+        glBindVertexArray(vertex_array);
         
+        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
         glUniformMatrix4fv(model_matrix_location, 1, GL_FALSE, m[0]);
         glUniform3f(directional_light_color_location, 1, 1, 1);
         glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
         
-        glDrawElements(GL_TRIANGLES, mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
+        glDrawElements(GL_TRIANGLES, box_mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
         check_opengl_errors("rendering");
 		
 
