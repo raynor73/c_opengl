@@ -10,6 +10,7 @@
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <libbmp/libbmp.h>
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
@@ -151,6 +152,11 @@ static void init_geometry() {
 	}
 }
 
+static void init_bitmaps() {
+	bmp_img wood_box_wall;
+	bmp_img_read(&wood_box_wall, "./bitmaps/wood_box_wall.bmp");
+}
+
 static GLuint compile_and_link_shader_program(const char *vertex_shader_source, const char *fragment_shader_source) {
 	const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
@@ -238,6 +244,7 @@ static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int f
 int main(int argc, char **argv) {
 	opengl_error_detector_init();
 	init_geometry();
+	init_bitmaps();
 
 	GLFWwindow* window;
 
@@ -273,6 +280,33 @@ int main(int argc, char **argv) {
     GLuint program = compile_and_link_shader_program(vertex_shader_text, fragment_shader_text);
     Mesh *mesh = box_mesh;
     GLuint vertex_array = setup_vao_for_mesh(program, mesh);
+    
+        GLuint texture;
+    glGenTextures(1, &texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        bitmapInfo.width,
+        bitmapInfo.height,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        bitmapInfo.data.data()
+    );
+
+    m_textures[name] = TextureInfo{ texture, bitmapInfo.width, bitmapInfo.height };
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
@@ -282,6 +316,7 @@ int main(int argc, char **argv) {
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
+		glBindTexture(GL_TEXTURE_2D, 0);
 		render_mesh(program, vertex_array, width, height, mesh);
 
         glfwSwapBuffers(window);
