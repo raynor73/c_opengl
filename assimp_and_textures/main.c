@@ -21,7 +21,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
 }
 
-static Mesh *mesh;
+static Mesh *triangle_mesh;
 static Mesh *box_mesh;
 
 static const char* vertex_shader_text =
@@ -62,50 +62,50 @@ static const char* fragment_shader_text =
 static const struct aiScene *scene = NULL;
 
 static void init_geometry() {
-	mesh = mesh_new(3, 3);
+	triangle_mesh = mesh_new(3, 3);
 	
 	// Vertex 1
-	mesh->vertices[0].position[0] = -0.6;
-	mesh->vertices[0].position[1] = -0.4;
-	mesh->vertices[0].position[2] = 0.0;
+	triangle_mesh->vertices[0].position[0] = -0.6;
+	triangle_mesh->vertices[0].position[1] = -0.4;
+	triangle_mesh->vertices[0].position[2] = 0.0;
 	
-	mesh->vertices[0].normal[0] = 0.0;
-	mesh->vertices[0].normal[1] = 0.0;
-	mesh->vertices[0].normal[2] = -1.0;
+	triangle_mesh->vertices[0].normal[0] = 0.0;
+	triangle_mesh->vertices[0].normal[1] = 0.0;
+	triangle_mesh->vertices[0].normal[2] = 1.0;
 	
-	mesh->vertices[0].color[0] = 1.0;
-	mesh->vertices[0].color[1] = 0.0;
-	mesh->vertices[0].color[2] = 0.0;
+	triangle_mesh->vertices[0].color[0] = 1.0;
+	triangle_mesh->vertices[0].color[1] = 0.0;
+	triangle_mesh->vertices[0].color[2] = 0.0;
 	
 	// Vertex 2
-	mesh->vertices[1].position[0] = 0.6;
-	mesh->vertices[1].position[1] = -0.4;
-	mesh->vertices[1].position[2] = 0.0;
+	triangle_mesh->vertices[1].position[0] = 0.6;
+	triangle_mesh->vertices[1].position[1] = -0.4;
+	triangle_mesh->vertices[1].position[2] = 0.0;
 	
-	mesh->vertices[1].normal[0] = 0.0;
-	mesh->vertices[1].normal[1] = 0.0;
-	mesh->vertices[1].normal[2] = -1.0;
+	triangle_mesh->vertices[1].normal[0] = 0.0;
+	triangle_mesh->vertices[1].normal[1] = 0.0;
+	triangle_mesh->vertices[1].normal[2] = 1.0;
 	
-	mesh->vertices[1].color[0] = 0.0;
-	mesh->vertices[1].color[1] = 1.0;
-	mesh->vertices[1].color[2] = 0.0;
+	triangle_mesh->vertices[1].color[0] = 0.0;
+	triangle_mesh->vertices[1].color[1] = 1.0;
+	triangle_mesh->vertices[1].color[2] = 0.0;
 	
 	// Vertex 3
-	mesh->vertices[2].position[0] = 0.0;
-	mesh->vertices[2].position[1] = 0.6;
-	mesh->vertices[2].position[2] = 0.0;
+	triangle_mesh->vertices[2].position[0] = 0.0;
+	triangle_mesh->vertices[2].position[1] = 0.6;
+	triangle_mesh->vertices[2].position[2] = 0.0;
 	
-	mesh->vertices[2].normal[0] = 0.0;
-	mesh->vertices[2].normal[1] = 0.0;
-	mesh->vertices[2].normal[2] = -1.0;
+	triangle_mesh->vertices[2].normal[0] = 0.0;
+	triangle_mesh->vertices[2].normal[1] = 0.0;
+	triangle_mesh->vertices[2].normal[2] = 1.0;
 	
-	mesh->vertices[2].color[0] = 0.0;
-	mesh->vertices[2].color[1] = 0.0;
-	mesh->vertices[2].color[2] = 1.0;
+	triangle_mesh->vertices[2].color[0] = 0.0;
+	triangle_mesh->vertices[2].color[1] = 0.0;
+	triangle_mesh->vertices[2].color[2] = 1.0;
 	
-	mesh->indices[0] = 0;
-	mesh->indices[1] = 1;
-	mesh->indices[2] = 2;
+	triangle_mesh->indices[0] = 0;
+	triangle_mesh->indices[1] = 1;
+	triangle_mesh->indices[2] = 2;
 	
 	
 	
@@ -205,6 +205,36 @@ static GLuint setup_vao_for_mesh(GLuint program, const Mesh *mesh) {
 	return vertex_array;
 }
 
+static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int framebuffer_height, Mesh *mesh) {
+	glUseProgram(program);
+	glBindVertexArray(vao);
+	
+    const GLint mvp_location = glGetUniformLocation(program, "MVP");
+    const GLint model_matrix_location = glGetUniformLocation(program, "model_matrix");
+    const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
+    const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
+	
+	const float ratio = framebuffer_width / (float) framebuffer_height;
+	
+	mat4 p, mvp;
+	mat4 m = GLM_MAT4_IDENTITY_INIT;
+	glm_translate_z(m, -2);
+	glm_rotate_y(m, glfwGetTime(), m);
+	glm_perspective(glm_rad(90), ratio, 0.1, 1000, p);
+	glm_mat4_mul(p, m, mvp);
+	
+	vec3 directional_light_direction = { 0, 0, -1 };
+	glm_vec3_normalize(directional_light_direction);
+
+	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
+	glUniformMatrix4fv(model_matrix_location, 1, GL_FALSE, m[0]);
+	glUniform3f(directional_light_color_location, 1, 1, 1);
+	glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
+	
+	glDrawElements(GL_TRIANGLES, mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
+	check_opengl_errors("rendering");
+}
+
 int main(int argc, char **argv) {
 	opengl_error_detector_init();
 	init_geometry();
@@ -239,53 +269,21 @@ int main(int argc, char **argv) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
-	
-
 
     GLuint program = compile_and_link_shader_program(vertex_shader_text, fragment_shader_text);
-    
-    const GLint mvp_location = glGetUniformLocation(program, "MVP");
-    const GLint model_matrix_location = glGetUniformLocation(program, "model_matrix");
-    const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
-    const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
+    Mesh *mesh = box_mesh;
+    GLuint vertex_array = setup_vao_for_mesh(program, mesh);
 
-    GLuint vertex_array = setup_vao_for_mesh(program, box_mesh);
-    //GLuint vertex_array = setup_vao_for_mesh(program, mesh);
-
-	vec3 directional_light_direction = { 0, 0, -1 };
-	glm_vec3_normalize(directional_light_direction);
-	
-	
-	
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
 		int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        const float ratio = width / (float) height;
  
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
-        mat4 p, mvp;
-        mat4 m = GLM_MAT4_IDENTITY_INIT;
-        glm_translate_z(m, -2);
-        glm_rotate_y(m, glfwGetTime(), m);
-        glm_perspective(glm_rad(90), ratio, 0.1, 1000, p);
-        glm_mat4_mul(p, m, mvp);
-		
-        glUseProgram(program);
-        glBindVertexArray(vertex_array);
-        
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
-        glUniformMatrix4fv(model_matrix_location, 1, GL_FALSE, m[0]);
-        glUniform3f(directional_light_color_location, 1, 1, 1);
-        glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
-        
-        glDrawElements(GL_TRIANGLES, box_mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
-        check_opengl_errors("rendering");
-		
+		render_mesh(program, vertex_array, width, height, mesh);
 
-      
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
