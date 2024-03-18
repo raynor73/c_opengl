@@ -203,6 +203,8 @@ bmp_img_read (bmp_img    *img,
 	// Needed to compare the return value of fread
 	const size_t items = img->img_header.biWidth;
 	
+	fseek(img_file, img->img_header.bfOffBits, SEEK_SET);
+	
 	// Read the content:
 	for (size_t y = 0; y < h; y++)
 	{

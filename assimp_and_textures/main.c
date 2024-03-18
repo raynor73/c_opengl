@@ -22,24 +22,20 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
 }
 
-static Mesh *triangle_mesh;
 static Mesh *box_mesh;
 
 static const char* vertex_shader_text =
 "#version 330\n"
 "uniform mat4 MVP;\n"
 "uniform mat4 model_matrix;\n"
-//"in vec3 vCol;\n"
 "in vec2 uv;\n"
 "in vec3 vPos;\n"
 "in vec3 normal;\n"
-"out vec3 color;\n"
 "out vec3 normal_varying;\n"
 "out vec2 uv_varying;\n"
 "void main()\n"
 "{\n"
 "    gl_Position = MVP * vec4(vPos, 1.0);\n"
-//"    color = vCol;\n"
 "	 normal_varying = (model_matrix * vec4(normal, 0.0)).xyz;\n"
 "	 uv_varying = uv;\n"
 "}\n";
@@ -52,14 +48,12 @@ static const char* fragment_shader_text =
 "};\n"
 "uniform DirectionalLight directional_light;\n"
 "in vec3 normal_varying;\n"
-//"in vec3 color;\n"
 "in vec2 uv_varying;\n"
 "uniform sampler2D texture_uniform;"
 "out vec4 fragment;\n"
 "void main()\n"
 "{\n"
 "	fragment =\n"
-//"            vec4(color, 1.0) * vec4(directional_light.color, 1.0) *\n"
 "            texture2D(texture_uniform, uv_varying) * vec4(directional_light.color, 1.0) *\n"
 "            dot(normalize(normal_varying), -directional_light.direction);\n"
 "}\n";
@@ -69,53 +63,6 @@ static const char* fragment_shader_text =
 static const struct aiScene *scene = NULL;
 
 static void init_geometry() {
-	triangle_mesh = mesh_new(3, 3);
-	
-	// Vertex 1
-	triangle_mesh->vertices[0].position[0] = -0.6;
-	triangle_mesh->vertices[0].position[1] = -0.4;
-	triangle_mesh->vertices[0].position[2] = 0.0;
-	
-	triangle_mesh->vertices[0].normal[0] = 0.0;
-	triangle_mesh->vertices[0].normal[1] = 0.0;
-	triangle_mesh->vertices[0].normal[2] = 1.0;
-	
-	triangle_mesh->vertices[0].color[0] = 1.0;
-	triangle_mesh->vertices[0].color[1] = 0.0;
-	triangle_mesh->vertices[0].color[2] = 0.0;
-	
-	// Vertex 2
-	triangle_mesh->vertices[1].position[0] = 0.6;
-	triangle_mesh->vertices[1].position[1] = -0.4;
-	triangle_mesh->vertices[1].position[2] = 0.0;
-	
-	triangle_mesh->vertices[1].normal[0] = 0.0;
-	triangle_mesh->vertices[1].normal[1] = 0.0;
-	triangle_mesh->vertices[1].normal[2] = 1.0;
-	
-	triangle_mesh->vertices[1].color[0] = 0.0;
-	triangle_mesh->vertices[1].color[1] = 1.0;
-	triangle_mesh->vertices[1].color[2] = 0.0;
-	
-	// Vertex 3
-	triangle_mesh->vertices[2].position[0] = 0.0;
-	triangle_mesh->vertices[2].position[1] = 0.6;
-	triangle_mesh->vertices[2].position[2] = 0.0;
-	
-	triangle_mesh->vertices[2].normal[0] = 0.0;
-	triangle_mesh->vertices[2].normal[1] = 0.0;
-	triangle_mesh->vertices[2].normal[2] = 1.0;
-	
-	triangle_mesh->vertices[2].color[0] = 0.0;
-	triangle_mesh->vertices[2].color[1] = 0.0;
-	triangle_mesh->vertices[2].color[2] = 1.0;
-	
-	triangle_mesh->indices[0] = 0;
-	triangle_mesh->indices[1] = 1;
-	triangle_mesh->indices[2] = 2;
-	
-	
-	
 	scene = aiImportFile("./meshes/box.obj", aiProcessPreset_TargetRealtime_MaxQuality);
 	if (!scene) {
 		error("Error loading box.obj\n");
@@ -169,9 +116,17 @@ static GLuint create_texture_from_file(const char *path) {
 	bmp_img_read(&bitmap, path);
 	uint8_t *bitmap_data = (uint8_t *) malloc(bitmap.img_header.biWidth * bitmap.img_header.biHeight * TEXTURE_BYTES_PER_PIXEL);
 	uint32_t bitmap_data_offset = 0;
-	for (uint32_t y = 0; y < bitmap.img_header.biHeight; y++) {
-		for (uint32_t x = 0; x < bitmap.img_header.biWidth; x++) {
-			bmp_pixel pixel = bitmap.img_pixels[x][y];
+	for (int y = 0; y < bitmap.img_header.biHeight; y++) {
+		for (int x = 0; x < bitmap.img_header.biWidth; x++) {
+			bmp_pixel pixel;
+			if (x == 0 && y == 0) {
+				pixel.red = 255;
+				pixel.green = 0;
+				pixel.blue = 0;
+			} else {
+				pixel = bitmap.img_pixels[y][x];
+			}
+				
 			bitmap_data[bitmap_data_offset++] = pixel.red;
 			bitmap_data[bitmap_data_offset++] = pixel.green;
 			bitmap_data[bitmap_data_offset++] = pixel.blue;
@@ -249,7 +204,6 @@ static GLuint setup_vao_for_mesh(GLuint program, const Mesh *mesh) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * mesh->number_of_indices, mesh->indices, GL_STATIC_DRAW);
      
     const GLint vpos_location = glGetAttribLocation(program, "vPos");
-    //const GLint vcol_location = glGetAttribLocation(program, "vCol");
     const GLint normal_location = glGetAttribLocation(program, "normal");
     const GLint uv_location = glGetAttribLocation(program, "uv");
     check_opengl_errors("getting uniform and attribute locations");
@@ -257,9 +211,6 @@ static GLuint setup_vao_for_mesh(GLuint program, const Mesh *mesh) {
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, position));
-    /*glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, color));*/
     glEnableVertexAttribArray(normal_location);
     glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), (void*) offsetof(Vertex, normal));
