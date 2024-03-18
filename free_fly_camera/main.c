@@ -7,130 +7,35 @@
 #include "opengl_error_detector.h"
 #include "vertex.h"
 #include "mesh.h"
-#include <libbmp/libbmp.h>
 #include "mesh_loader.h"
 #include "fs.h"
+#include "texture_factory.h"
+#include "vao.h"
+#include "shader_builder.h"
+#include "transform.h"
+
+static vec3 UP = { 0, 1, 0 };
+static vec3 FORWARD = { 0, 0, -1 };
+static Transform camera_transform; 
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
 }
 
+static bool is_w_key_pressed = false;
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
-}
-
-#define TEXTURE_BYTES_PER_PIXEL 4
-static GLuint create_texture_from_file(const char *path) {
-	bmp_img bitmap;
-	bmp_img_read(&bitmap, path);
-	uint8_t *bitmap_data = (uint8_t *) malloc(bitmap.img_header.biWidth * bitmap.img_header.biHeight * TEXTURE_BYTES_PER_PIXEL);
-	uint32_t bitmap_data_offset = 0;
-	for (int y = 0; y < bitmap.img_header.biHeight; y++) {
-		for (int x = 0; x < bitmap.img_header.biWidth; x++) {
-			bmp_pixel pixel;
-			if (x == 0 && y == 0) {
-				pixel.red = 255;
-				pixel.green = 0;
-				pixel.blue = 0;
-			} else {
-				pixel = bitmap.img_pixels[y][x];
-			}
-				
-			bitmap_data[bitmap_data_offset++] = pixel.red;
-			bitmap_data[bitmap_data_offset++] = pixel.green;
-			bitmap_data[bitmap_data_offset++] = pixel.blue;
-			bitmap_data[bitmap_data_offset++] = 255;
+    
+    if (key == GLFW_KEY_W) {
+		if (action == GLFW_PRESS) {
+			is_w_key_pressed = true;
+		} else if (action == GLFW_RELEASE) {
+			is_w_key_pressed = false;
 		}
 	}
-	
-    GLuint texture;
-    glGenTextures(1, &texture);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA,
-        bitmap.img_header.biWidth,
-        bitmap.img_header.biHeight,
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        bitmap_data
-    );
-    
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-	
-	check_opengl_errors("load texture");
-	
-	bmp_img_free(&bitmap);
-	free(bitmap_data);
-	
-	return texture;
-}
-
-static GLuint compile_and_link_shader_program(const char *vertex_shader_source, const char *fragment_shader_source) {
-	const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
-    glCompileShader(vertex_shader);
-	check_shader_compilation_error(vertex_shader, "vertex shader");
- 
-    const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
-    glCompileShader(fragment_shader);
-	check_shader_compilation_error(fragment_shader, "fragment shader");
- 
-    const GLuint program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-    check_shader_linking_error(program, "shader program");
-    
-    return program;
-} 
-
-static GLuint setup_vao_for_mesh(GLuint program, const Mesh *mesh) {
-	GLuint vertex_array;
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
-    
-    GLuint vertex_buffer;
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh->number_of_vertices, mesh->vertices, GL_STATIC_DRAW);
-    
-    GLuint index_buffer;
-    glGenBuffers(1, &index_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * mesh->number_of_indices, mesh->indices, GL_STATIC_DRAW);
-     
-    const GLint vpos_location = glGetAttribLocation(program, "vPos");
-    const GLint normal_location = glGetAttribLocation(program, "normal");
-    const GLint uv_location = glGetAttribLocation(program, "uv");
-    check_opengl_errors("getting uniform and attribute locations");
-
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, position));
-    glEnableVertexAttribArray(normal_location);
-    glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, normal));
-    glEnableVertexAttribArray(uv_location);
-    glVertexAttribPointer(uv_location, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), (void*) offsetof(Vertex, uv));
-    check_opengl_errors("vertex attributes initialization");
-
-	return vertex_array;
 }
 
 static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int framebuffer_height, Mesh *mesh) {
@@ -146,13 +51,14 @@ static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int f
 	const float ratio = framebuffer_width / (float) framebuffer_height;
 	
 	mat4 p, mvp;
-	
+	mat4 view_matrix;
 	mat4 m = GLM_MAT4_IDENTITY_INIT;
-	mat4 view_matrix = GLM_MAT4_IDENTITY_INIT;
 	mat4 model_view_matrix;
 	
-	glm_rotate_y(view_matrix, 1, view_matrix);
-	glm_translate_z(view_matrix, -2);
+	vec3 look_at_coordinate;
+	glm_quat_rotatev(camera_transform.rotation, FORWARD, look_at_coordinate);
+	glm_vec3_add(look_at_coordinate, camera_transform.position, look_at_coordinate);
+	glm_lookat(camera_transform.position, look_at_coordinate, UP, view_matrix);
 	
 	glm_translate_z(m, -2);
 	glm_rotate_y(m, glfwGetTime(), m);
@@ -179,6 +85,12 @@ static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int f
 
 int main(int argc, char **argv) {
 	opengl_error_detector_init();
+	
+	camera_transform.position[0] = 0;
+	camera_transform.position[1] = 0;
+	camera_transform.position[2] = 2;
+	glm_quat_identity(camera_transform.rotation);
+		
 	Mesh *box_mesh = load_mesh("./meshes/box.obj");
 
 	GLFWwindow* window;
@@ -220,12 +132,21 @@ int main(int argc, char **argv) {
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
     
     /* Loop until the user closes the window */
+    double prev_time = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
+		double current_time = glfwGetTime();
+		float dt = current_time - prev_time;
+        prev_time = current_time;
+		
 		int width, height;
         glfwGetFramebufferSize(window, &width, &height);
  
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+ 
+		if (is_w_key_pressed) {
+			camera_transform.position[2] -= dt;
+		}
  
 		glBindTexture(GL_TEXTURE_2D, wooden_box_wall_texture);
 		render_mesh(program, vertex_array, width, height, mesh);
