@@ -9,6 +9,7 @@
 #include "mesh.h"
 #include <libbmp/libbmp.h>
 #include "mesh_loader.h"
+#include "fs.h"
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
@@ -19,40 +20,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
-
-static const char* vertex_shader_text =
-"#version 330\n"
-"uniform mat4 MVP;\n"
-"uniform mat4 model_matrix;\n"
-"in vec2 uv;\n"
-"in vec3 vPos;\n"
-"in vec3 normal;\n"
-"out vec3 normal_varying;\n"
-"out vec2 uv_varying;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vPos, 1.0);\n"
-"	 normal_varying = (model_matrix * vec4(normal, 0.0)).xyz;\n"
-"	 uv_varying = uv;\n"
-"}\n";
-
-static const char* fragment_shader_text =
-"#version 330\n"
-"struct DirectionalLight {\n"
-"    vec3 color;\n"
-"    vec3 direction;\n"
-"};\n"
-"uniform DirectionalLight directional_light;\n"
-"in vec3 normal_varying;\n"
-"in vec2 uv_varying;\n"
-"uniform sampler2D texture_uniform;"
-"out vec4 fragment;\n"
-"void main()\n"
-"{\n"
-"	fragment =\n"
-"            texture2D(texture_uniform, uv_varying) * vec4(directional_light.color, 1.0) *\n"
-"            dot(normalize(normal_varying), -directional_light.direction);\n"
-"}\n";
 
 #define TEXTURE_BYTES_PER_PIXEL 4
 static GLuint create_texture_from_file(const char *path) {
@@ -245,13 +212,13 @@ int main(int argc, char **argv) {
 	glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
 
+	const char *vertex_shader_text = load_text_file("./shaders/vertex_shader.glsl");
+	const char *fragment_shader_text = load_text_file("./shaders/fragment_shader.glsl");
     GLuint program = compile_and_link_shader_program(vertex_shader_text, fragment_shader_text);
     Mesh *mesh = box_mesh;
     GLuint vertex_array = setup_vao_for_mesh(program, mesh);
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
     
-   
-   
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
 		int width, height;

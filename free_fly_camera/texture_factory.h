@@ -1,0 +1,6 @@
+#ifndef ILAPIN_TEXTURE_FACTORY_H
+#define ILAPIN_TEXTURE_FACTORY_H
+
+
+
+#endif
