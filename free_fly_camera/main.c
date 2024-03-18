@@ -7,10 +7,8 @@
 #include "opengl_error_detector.h"
 #include "vertex.h"
 #include "mesh.h"
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <libbmp/libbmp.h>
+#include "mesh_loader.h"
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
@@ -21,8 +19,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
-
-static Mesh *box_mesh;
 
 static const char* vertex_shader_text =
 "#version 330\n"
@@ -57,58 +53,6 @@ static const char* fragment_shader_text =
 "            texture2D(texture_uniform, uv_varying) * vec4(directional_light.color, 1.0) *\n"
 "            dot(normalize(normal_varying), -directional_light.direction);\n"
 "}\n";
-
-#define NUMBER_OF_VERTICES_IN_A_FACE 3
-
-static const struct aiScene *scene = NULL;
-
-static void init_geometry() {
-	scene = aiImportFile("./meshes/box.obj", aiProcessPreset_TargetRealtime_MaxQuality);
-	if (!scene) {
-		error("Error loading box.obj\n");
-	}
-	if (scene->mNumMeshes == 0) {
-		error("Nothing loaded from box.obj\n");
-	}
-	struct aiMesh *ai_box_mesh = scene->mMeshes[0];
-	box_mesh = mesh_new(ai_box_mesh->mNumVertices, ai_box_mesh->mNumFaces * NUMBER_OF_VERTICES_IN_A_FACE);
-	for (int i = 0; i < ai_box_mesh->mNumVertices; i++) {
-		struct aiVector3D *aiVertex = &ai_box_mesh->mVertices[i];
-		struct aiVector3D *aiNormal = &ai_box_mesh->mNormals[i];
-		struct aiVector3D *ai_uv = &ai_box_mesh->mTextureCoords[0][i];
-		
-		Vertex *vertex = &box_mesh->vertices[i];
-		vec3 *position = &vertex->position;
-		vec3 *normal = &vertex->normal;
-		vec3 *color = &vertex->color;
-		vec2 *uv = &vertex->uv;
-		
-		position[0][0] = aiVertex->x;
-		position[0][1] = aiVertex->y;
-		position[0][2] = aiVertex->z;
-		
-		normal[0][0] = aiNormal->x;
-		normal[0][1] = aiNormal->y;
-		normal[0][2] = aiNormal->z;
-		
-		color[0][0] = 1;
-		color[0][1] = 1;
-		color[0][2] = 1;
-		
-		uv[0][0] = ai_uv->x;
-		uv[0][1] = ai_uv->y;
-	}
-	
-	for (int i = 0; i < ai_box_mesh->mNumFaces; i++) {
-		struct aiFace *ai_face = &ai_box_mesh->mFaces[i];
-		
-		int base_index = i * NUMBER_OF_VERTICES_IN_A_FACE;
-		
-		box_mesh->indices[base_index] = ai_face->mIndices[0];
-		box_mesh->indices[base_index + 1] = ai_face->mIndices[1];
-		box_mesh->indices[base_index + 2] = ai_face->mIndices[2];
-	}
-}
 
 #define TEXTURE_BYTES_PER_PIXEL 4
 static GLuint create_texture_from_file(const char *path) {
@@ -268,7 +212,7 @@ static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int f
 
 int main(int argc, char **argv) {
 	opengl_error_detector_init();
-	init_geometry();
+	Mesh *box_mesh = load_mesh("./meshes/box.obj");
 
 	GLFWwindow* window;
 
