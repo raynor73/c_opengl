@@ -21,6 +21,7 @@ static vec3 RIGHT = { 1, 0, 0 };
 static Transform camera_transform;
  
 static float camera_y_angle = 0;
+static float camera_x_angle = 0;
 
 static bool is_w_key_pressed = false;
 static bool is_s_key_pressed = false;
@@ -33,14 +34,21 @@ static void error_callback(int error_code, const char* description) {
 
 static bool is_prev_cursor_position_available = false;
 static double prev_pointer_position_x = 0;
+static double prev_pointer_position_y = 0;
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-	//printf("Cursor position: %f; %f\n", xpos, ypos);
 	if (is_prev_cursor_position_available) {
-		camera_y_angle -= GLM_PI_4 *((xpos - prev_pointer_position_x) / (1399.0 / 2)); 
+		camera_y_angle -= GLM_PI_4 *((xpos - prev_pointer_position_x) / (1399.0 / 2));
+		camera_x_angle -= GLM_PI_4 *((ypos - prev_pointer_position_y) / (1399.0 / 2));
 		
-		glm_quat(camera_transform.rotation, camera_y_angle, 0, 1, 0);
+		versor camera_y_rotation;
+		versor camera_x_rotation;
+		glm_quat(camera_y_rotation, camera_y_angle, 0, 1, 0);
+		glm_quat(camera_x_rotation, camera_x_angle, 1, 0, 0);
+		glm_quat_mul(camera_y_rotation, camera_x_rotation, camera_transform.rotation);
+		//glm_quat(camera_transform.rotation, camera_y_angle, 0, 1, 0);
 	} 
 	prev_pointer_position_x = xpos;
+	prev_pointer_position_y = ypos;
 	is_prev_cursor_position_available = true;
 }
 
