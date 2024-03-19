@@ -13,10 +13,8 @@
 #include "vao.h"
 #include "shader_builder.h"
 #include "transform.h"
-
-static vec3 UP = { 0, 1, 0 };
-static vec3 FORWARD = { 0, 0, -1 };
-static vec3 RIGHT = { 1, 0, 0 };
+#include "material.h"
+#include "constants.h"
 
 static Transform camera_transform;
  
@@ -45,7 +43,6 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 		glm_quat(camera_y_rotation, camera_y_angle, 0, 1, 0);
 		glm_quat(camera_x_rotation, camera_x_angle, 1, 0, 0);
 		glm_quat_mul(camera_y_rotation, camera_x_rotation, camera_transform.rotation);
-		//glm_quat(camera_transform.rotation, camera_y_angle, 0, 1, 0);
 	} 
 	prev_pointer_position_x = xpos;
 	prev_pointer_position_y = ypos;
@@ -94,7 +91,15 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	}
 }
 
-static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int framebuffer_height, Mesh *mesh) {
+// TODO Add following args: camera
+static void render_mesh(
+	GLuint program, 
+	GLuint vao, 
+	int framebuffer_width, 
+	int framebuffer_height, 
+	Mesh *mesh,
+	Material *material
+) {
 	glUseProgram(program);
 	glBindVertexArray(vao);
 	
@@ -132,6 +137,7 @@ static void render_mesh(GLuint program, GLuint vao, int framebuffer_width, int f
 	glUniform3f(directional_light_color_location, 1, 1, 1);
 	glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
 	
+	glBindTexture(GL_TEXTURE_2D, material->texture);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(texture_uniform, 0);
 
@@ -148,6 +154,7 @@ int main(int argc, char **argv) {
 	glm_quat_identity(camera_transform.rotation);
 		
 	Mesh *box_mesh = load_mesh("./meshes/box.obj");
+	Material box_material;
 
 	GLFWwindow* window;
 
@@ -188,6 +195,7 @@ int main(int argc, char **argv) {
     Mesh *mesh = box_mesh;
     GLuint vertex_array = setup_vao_for_mesh(program, mesh);
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
+	box_material.texture = wooden_box_wall_texture;
     
     /* Loop until the user closes the window */
     double prev_time = glfwGetTime();
@@ -224,8 +232,7 @@ int main(int argc, char **argv) {
 			glm_vec3_add(camera_transform.position, movement, camera_transform.position);
 		}
  
-		glBindTexture(GL_TEXTURE_2D, wooden_box_wall_texture);
-		render_mesh(program, vertex_array, width, height, mesh);
+		render_mesh(program, vertex_array, width, height, mesh, &box_material);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
