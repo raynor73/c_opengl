@@ -16,25 +16,73 @@
 
 static vec3 UP = { 0, 1, 0 };
 static vec3 FORWARD = { 0, 0, -1 };
-static Transform camera_transform; 
+static vec3 RIGHT = { 1, 0, 0 };
+
+static Transform camera_transform;
+ 
+static float camera_y_angle = 0;
+
+static bool is_w_key_pressed = false;
+static bool is_s_key_pressed = false;
+static bool is_a_key_pressed = false;
+static bool is_d_key_pressed = false;
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
 }
 
-static bool is_w_key_pressed = false;
+static bool is_prev_cursor_position_available = false;
+static double prev_pointer_position_x = 0;
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+	//printf("Cursor position: %f; %f\n", xpos, ypos);
+	if (is_prev_cursor_position_available) {
+		camera_y_angle -= GLM_PI_4 *((xpos - prev_pointer_position_x) / (1399.0 / 2)); 
+		
+		glm_quat(camera_transform.rotation, camera_y_angle, 0, 1, 0);
+	} 
+	prev_pointer_position_x = xpos;
+	is_prev_cursor_position_available = true;
+}
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-    
-    if (key == GLFW_KEY_W) {
-		if (action == GLFW_PRESS) {
-			is_w_key_pressed = true;
-		} else if (action == GLFW_RELEASE) {
-			is_w_key_pressed = false;
-		}
+	switch (key) {
+		case GLFW_KEY_ESCAPE:
+			if (action == GLFW_PRESS) {
+				glfwSetWindowShouldClose(window, GLFW_TRUE);
+			}
+			break;
+			
+		case GLFW_KEY_W:
+			if (action == GLFW_PRESS) {
+				is_w_key_pressed = true;
+			} else if (action == GLFW_RELEASE) {
+				is_w_key_pressed = false;
+			}
+			break;
+
+		case GLFW_KEY_S:
+			if (action == GLFW_PRESS) {
+				is_s_key_pressed = true;
+			} else if (action == GLFW_RELEASE) {
+				is_s_key_pressed = false;
+			}
+			break;
+
+		case GLFW_KEY_A:
+			if (action == GLFW_PRESS) {
+				is_a_key_pressed = true;
+			} else if (action == GLFW_RELEASE) {
+				is_a_key_pressed = false;
+			}
+			break;
+
+		case GLFW_KEY_D:
+			if (action == GLFW_PRESS) {
+				is_d_key_pressed = true;
+			} else if (action == GLFW_RELEASE) {
+				is_d_key_pressed = false;
+			}
+			break;
 	}
 }
 
@@ -118,6 +166,8 @@ int main(int argc, char **argv) {
 
 	gladLoadGL((GLADloadfunc) glfwGetProcAddress);
 	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSwapInterval(1);
 	
 	glEnable(GL_CULL_FACE);
@@ -144,8 +194,26 @@ int main(int argc, char **argv) {
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
+		vec3 movement;
 		if (is_w_key_pressed) {
-			camera_transform.position[2] -= dt;
+			glm_quat_rotatev(camera_transform.rotation, FORWARD, movement);
+			glm_vec3_scale(movement, dt, movement);
+			glm_vec3_add(camera_transform.position, movement, camera_transform.position);
+		}
+		if (is_s_key_pressed) {
+			glm_quat_rotatev(camera_transform.rotation, FORWARD, movement);
+			glm_vec3_scale(movement, dt, movement);
+			glm_vec3_sub(camera_transform.position, movement, camera_transform.position);
+		}
+		if (is_a_key_pressed) {
+			glm_quat_rotatev(camera_transform.rotation, RIGHT, movement);
+			glm_vec3_scale(movement, dt, movement);
+			glm_vec3_sub(camera_transform.position, movement, camera_transform.position);
+		}
+		if (is_d_key_pressed) {
+			glm_quat_rotatev(camera_transform.rotation, RIGHT, movement);
+			glm_vec3_scale(movement, dt, movement);
+			glm_vec3_add(camera_transform.position, movement, camera_transform.position);
 		}
  
 		glBindTexture(GL_TEXTURE_2D, wooden_box_wall_texture);
