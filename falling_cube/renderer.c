@@ -1,0 +1,53 @@
+#include "renderer.h"
+#include "opengl_error_detector.h"
+#include <GLFW/glfw3.h>
+#include "constants.h"
+
+void render_mesh(
+	GLuint program,
+	GLuint vao,
+	Transform *camera_transform,
+	mat4 projection_matrix,
+	Mesh *mesh,
+	Material *material
+) {
+	glUseProgram(program);
+	glBindVertexArray(vao);
+	
+    const GLint mvp_location = glGetUniformLocation(program, "MVP");
+    const GLint model_matrix_location = glGetUniformLocation(program, "model_matrix");
+    const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
+    const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
+    const GLint texture_uniform = glGetUniformLocation(program, "texture_uniform");
+		
+	mat4 mvp;
+	mat4 view_matrix;
+	mat4 m = GLM_MAT4_IDENTITY_INIT;
+	mat4 model_view_matrix;
+	
+	vec3 look_at_coordinate;
+	glm_quat_rotatev(camera_transform->rotation, FORWARD, look_at_coordinate);
+	glm_vec3_add(look_at_coordinate, camera_transform->position, look_at_coordinate);
+	glm_lookat(camera_transform->position, look_at_coordinate, UP, view_matrix);
+	
+	glm_translate_z(m, -2);
+	glm_rotate_y(m, glfwGetTime(), m);
+		
+	glm_mat4_mul(view_matrix, m, model_view_matrix);
+	glm_mat4_mul(projection_matrix, model_view_matrix, mvp);
+	
+	vec3 directional_light_direction = { 0, 0, -1 };
+	glm_vec3_normalize(directional_light_direction);
+
+	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
+	glUniformMatrix4fv(model_matrix_location, 1, GL_FALSE, m[0]);
+	glUniform3f(directional_light_color_location, 1, 1, 1);
+	glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
+	
+	glBindTexture(GL_TEXTURE_2D, material->texture);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(texture_uniform, 0);
+
+	glDrawElements(GL_TRIANGLES, mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
+	check_opengl_errors("rendering");
+}
