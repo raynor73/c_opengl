@@ -5,6 +5,7 @@
 #include <string.h>
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
+#include "constants.h"
 
 typedef struct FreeFlyCameraController {
 	float camera_y_angle;
@@ -39,7 +40,7 @@ void free_fly_camera_controller_delete(FreeFlyCameraController *controller) {
 	free(controller);
 }
 
-void free_fly_camera_controller_on_cursor_position_updated(FreeFlyCameraController *controller, float position_x, float poition_y) {
+void free_fly_camera_controller_on_cursor_position_updated(FreeFlyCameraController *controller, float position_x, float position_y) {
 	if (controller->is_prev_cursor_position_available) {
 		controller->camera_y_angle -= GLM_PI_4 *((position_x - controller->prev_pointer_position_x) / (1399.0 / 2));
 		controller->camera_x_angle -= GLM_PI_4 *((position_y - controller->prev_pointer_position_y) / (1399.0 / 2));
@@ -48,7 +49,7 @@ void free_fly_camera_controller_on_cursor_position_updated(FreeFlyCameraControll
 		versor camera_x_rotation;
 		glm_quat(camera_y_rotation, controller->camera_y_angle, 0, 1, 0);
 		glm_quat(camera_x_rotation, controller->camera_x_angle, 1, 0, 0);
-		glm_quat_mul(camera_y_rotation, camera_x_rotation, controller->camera_transform.rotation);
+		glm_quat_mul(camera_y_rotation, camera_x_rotation, controller->camera_transform->rotation);
 	} 
 	controller->prev_pointer_position_x = position_x;
 	controller->prev_pointer_position_y = position_y;
@@ -91,4 +92,26 @@ void free_fly_camera_controller_on_key_event(FreeFlyCameraController *controller
 	}
 }
 
-void free_fly_camera_controller_update(float dt);
+void free_fly_camera_controller_update(FreeFlyCameraController *controller, float dt) {
+	vec3 movement;
+	if (controller->is_w_key_pressed) {
+		glm_quat_rotatev(controller->camera_transform->rotation, FORWARD, movement);
+		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_add(controller->camera_transform->position, movement, controller->camera_transform->position);
+	}
+	if (controller->is_s_key_pressed) {
+		glm_quat_rotatev(controller->camera_transform->rotation, FORWARD, movement);
+		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_sub(controller->camera_transform->position, movement, controller->camera_transform->position);
+	}
+	if (controller->is_a_key_pressed) {
+		glm_quat_rotatev(controller->camera_transform->rotation, RIGHT, movement);
+		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_sub(controller->camera_transform->position, movement, controller->camera_transform->position);
+	}
+	if (controller->is_d_key_pressed) {
+		glm_quat_rotatev(controller->camera_transform->rotation, RIGHT, movement);
+		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_add(controller->camera_transform->position, movement, controller->camera_transform->position);
+	}
+}

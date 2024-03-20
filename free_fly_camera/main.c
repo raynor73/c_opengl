@@ -35,46 +35,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 				glfwSetWindowShouldClose(window, GLFW_TRUE);
 			}
 			break;
-			
-		case GLFW_KEY_W:
-			if (action == GLFW_PRESS) {
-				is_w_key_pressed = true;
-			} else if (action == GLFW_RELEASE) {
-				is_w_key_pressed = false;
-			}
-			break;
-
-		case GLFW_KEY_S:
-			if (action == GLFW_PRESS) {
-				is_s_key_pressed = true;
-			} else if (action == GLFW_RELEASE) {
-				is_s_key_pressed = false;
-			}
-			break;
-
-		case GLFW_KEY_A:
-			if (action == GLFW_PRESS) {
-				is_a_key_pressed = true;
-			} else if (action == GLFW_RELEASE) {
-				is_a_key_pressed = false;
-			}
-			break;
-
-		case GLFW_KEY_D:
-			if (action == GLFW_PRESS) {
-				is_d_key_pressed = true;
-			} else if (action == GLFW_RELEASE) {
-				is_d_key_pressed = false;
-			}
-			break;
 	}
 }
 
-// TODO Add following args: camera
 static void render_mesh(
 	GLuint program,
 	GLuint vao,
-	Transform &camera_transform,
+	Transform *camera_transform,
 	mat4 projection_matrix,
 	Mesh *mesh,
 	Material *material
@@ -87,26 +54,22 @@ static void render_mesh(
     const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
     const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
     const GLint texture_uniform = glGetUniformLocation(program, "texture_uniform");
-	
-	const float ratio = framebuffer_width / (float) framebuffer_height;
-	
-	mat4 p, mvp;
+		
+	mat4 mvp;
 	mat4 view_matrix;
 	mat4 m = GLM_MAT4_IDENTITY_INIT;
 	mat4 model_view_matrix;
 	
 	vec3 look_at_coordinate;
-	glm_quat_rotatev(camera_transform.rotation, FORWARD, look_at_coordinate);
-	glm_vec3_add(look_at_coordinate, camera_transform.position, look_at_coordinate);
-	glm_lookat(camera_transform.position, look_at_coordinate, UP, view_matrix);
+	glm_quat_rotatev(camera_transform->rotation, FORWARD, look_at_coordinate);
+	glm_vec3_add(look_at_coordinate, camera_transform->position, look_at_coordinate);
+	glm_lookat(camera_transform->position, look_at_coordinate, UP, view_matrix);
 	
 	glm_translate_z(m, -2);
 	glm_rotate_y(m, glfwGetTime(), m);
-	
-	glm_perspective(glm_rad(90), ratio, 0.1, 1000, p);
-	
+		
 	glm_mat4_mul(view_matrix, m, model_view_matrix);
-	glm_mat4_mul(p, model_view_matrix, mvp);
+	glm_mat4_mul(projection_matrix, model_view_matrix, mvp);
 	
 	vec3 directional_light_direction = { 0, 0, -1 };
 	glm_vec3_normalize(directional_light_direction);
@@ -128,6 +91,7 @@ int main(int argc, char **argv) {
 	opengl_error_detector_init();
 	
 	PerspectiveCamera camera;
+	free_fly_camera_controller = free_fly_camera_controller_new(&camera.transform);
 	
 	camera.transform.position[0] = 0;
 	camera.transform.position[1] = 0;
@@ -191,29 +155,10 @@ int main(int argc, char **argv) {
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
-		vec3 movement;
-		if (is_w_key_pressed) {
-			glm_quat_rotatev(camera_transform.rotation, FORWARD, movement);
-			glm_vec3_scale(movement, dt, movement);
-			glm_vec3_add(camera_transform.position, movement, camera_transform.position);
-		}
-		if (is_s_key_pressed) {
-			glm_quat_rotatev(camera_transform.rotation, FORWARD, movement);
-			glm_vec3_scale(movement, dt, movement);
-			glm_vec3_sub(camera_transform.position, movement, camera_transform.position);
-		}
-		if (is_a_key_pressed) {
-			glm_quat_rotatev(camera_transform.rotation, RIGHT, movement);
-			glm_vec3_scale(movement, dt, movement);
-			glm_vec3_sub(camera_transform.position, movement, camera_transform.position);
-		}
-		if (is_d_key_pressed) {
-			glm_quat_rotatev(camera_transform.rotation, RIGHT, movement);
-			glm_vec3_scale(movement, dt, movement);
-			glm_vec3_add(camera_transform.position, movement, camera_transform.position);
-		}
- 
-		render_mesh(program, vertex_array, width, height, mesh, &box_material);
+		free_fly_camera_controller_update(free_fly_camera_controller, dt);
+		mat4 projection_matrix;
+		glm_perspective(glm_rad(camera.fov), (float) width / height, camera.near, camera.far, projection_matrix);
+		render_mesh(program, vertex_array, &camera.transform, projection_matrix, mesh, &box_material);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
