@@ -4,9 +4,12 @@
 #include "transform.h"
 #include <cglm/cglm.h>
 
-typedef struct Camera {
+typedef struct PerspectiveCamera {
+	float fov;
+	float aspect_ratio;
+	float near;
+	float far;
 	Transform transform;
-	void (*get_projection_matrix)(mat4 projection_matrix);
-} Camera;
+} PerspectiveCamera;
 
 #endif

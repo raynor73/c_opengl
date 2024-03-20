@@ -15,38 +15,17 @@
 #include "transform.h"
 #include "material.h"
 #include "constants.h"
+#include "camera.h"
+#include "free_fly_camera_controller.h"
 
-static Transform camera_transform;
- 
-static float camera_y_angle = 0;
-static float camera_x_angle = 0;
-
-static bool is_w_key_pressed = false;
-static bool is_s_key_pressed = false;
-static bool is_a_key_pressed = false;
-static bool is_d_key_pressed = false;
+static FreeFlyCameraController *free_fly_camera_controller;
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
 }
 
-static bool is_prev_cursor_position_available = false;
-static double prev_pointer_position_x = 0;
-static double prev_pointer_position_y = 0;
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-	if (is_prev_cursor_position_available) {
-		camera_y_angle -= GLM_PI_4 *((xpos - prev_pointer_position_x) / (1399.0 / 2));
-		camera_x_angle -= GLM_PI_4 *((ypos - prev_pointer_position_y) / (1399.0 / 2));
-		
-		versor camera_y_rotation;
-		versor camera_x_rotation;
-		glm_quat(camera_y_rotation, camera_y_angle, 0, 1, 0);
-		glm_quat(camera_x_rotation, camera_x_angle, 1, 0, 0);
-		glm_quat_mul(camera_y_rotation, camera_x_rotation, camera_transform.rotation);
-	} 
-	prev_pointer_position_x = xpos;
-	prev_pointer_position_y = ypos;
-	is_prev_cursor_position_available = true;
+	free_fly_camera_controller_on_cursor_position_updated(free_fly_camera_controller, xpos, ypos);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -93,10 +72,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 // TODO Add following args: camera
 static void render_mesh(
-	GLuint program, 
-	GLuint vao, 
-	int framebuffer_width, 
-	int framebuffer_height, 
+	GLuint program,
+	GLuint vao,
+	Transform &camera_transform,
+	mat4 projection_matrix,
 	Mesh *mesh,
 	Material *material
 ) {
@@ -148,10 +127,12 @@ static void render_mesh(
 int main(int argc, char **argv) {
 	opengl_error_detector_init();
 	
-	camera_transform.position[0] = 0;
-	camera_transform.position[1] = 0;
-	camera_transform.position[2] = 2;
-	glm_quat_identity(camera_transform.rotation);
+	PerspectiveCamera camera;
+	
+	camera.transform.position[0] = 0;
+	camera.transform.position[1] = 0;
+	camera.transform.position[2] = 2;
+	glm_quat_identity(camera.transform.rotation);
 		
 	Mesh *box_mesh = load_mesh("./meshes/box.obj");
 	Material box_material;
