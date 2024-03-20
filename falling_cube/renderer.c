@@ -2,14 +2,14 @@
 #include "opengl_error_detector.h"
 #include <GLFW/glfw3.h>
 #include "constants.h"
+#include "game_object.h"
 
 void render_mesh(
 	GLuint program,
 	GLuint vao,
 	Transform *camera_transform,
 	mat4 projection_matrix,
-	Mesh *mesh,
-	Material *material
+	GameObject *game_object
 ) {
 	glUseProgram(program);
 	glBindVertexArray(vao);
@@ -30,8 +30,9 @@ void render_mesh(
 	glm_vec3_add(look_at_coordinate, camera_transform->position, look_at_coordinate);
 	glm_lookat(camera_transform->position, look_at_coordinate, UP, view_matrix);
 	
-	glm_translate_z(m, -2);
-	glm_rotate_y(m, glfwGetTime(), m);
+	glm_translate(m, game_object->transform.position);
+	glm_quat_rotate(m, game_object->transform.rotation, m);
+	glm_scale(m, game_object->transform.scale);
 		
 	glm_mat4_mul(view_matrix, m, model_view_matrix);
 	glm_mat4_mul(projection_matrix, model_view_matrix, mvp);
@@ -44,10 +45,10 @@ void render_mesh(
 	glUniform3f(directional_light_color_location, 1, 1, 1);
 	glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
 	
-	glBindTexture(GL_TEXTURE_2D, material->texture);
+	glBindTexture(GL_TEXTURE_2D, game_object->material.texture);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(texture_uniform, 0);
 
-	glDrawElements(GL_TRIANGLES, mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
+	glDrawElements(GL_TRIANGLES, game_object->mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
 	check_opengl_errors("rendering");
 }

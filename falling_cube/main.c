@@ -17,6 +17,7 @@
 #include "camera.h"
 #include "free_fly_camera_controller.h"
 #include "renderer.h"
+#include "game_object.h"
 
 static FreeFlyCameraController *free_fly_camera_controller;
 
@@ -54,9 +55,6 @@ int main(int argc, char **argv) {
 	
 	free_fly_camera_controller = free_fly_camera_controller_new(&camera.transform);
 	
-	Mesh *box_mesh = load_mesh("./meshes/box.obj");
-	Material box_material;
-
 	GLFWwindow* window;
 
     /* Initialize the library */
@@ -93,10 +91,20 @@ int main(int argc, char **argv) {
 	const char *vertex_shader_text = load_text_file("./shaders/vertex_shader.glsl");
 	const char *fragment_shader_text = load_text_file("./shaders/fragment_shader.glsl");
     GLuint program = compile_and_link_shader_program(vertex_shader_text, fragment_shader_text);
-    Mesh *mesh = box_mesh;
-    GLuint vertex_array = setup_vao_for_mesh(program, mesh);
+    
+    Mesh *box_mesh = load_mesh("./meshes/box.obj");
+    GLuint box_vao = setup_vao_for_mesh(program, box_mesh);
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
-	box_material.texture = wooden_box_wall_texture;
+	//GLuint concrete_squares_texture = create_texture_from_file("./bitmaps/concrete_squares.bmp");
+	
+	GameObject box;
+	box.vao = box_vao;
+	box.mesh = box_mesh;
+	box.material.texture = wooden_box_wall_texture;
+	glm_vec3_zero(box.transform.position);
+	box.transform.position[2] = -2;
+	glm_quat_identity(box.transform.rotation);
+	glm_vec3_one(box.transform.scale);
     
     /* Loop until the user closes the window */
     double prev_time = glfwGetTime();
@@ -114,7 +122,10 @@ int main(int argc, char **argv) {
 		free_fly_camera_controller_update(free_fly_camera_controller, dt);
 		mat4 projection_matrix;
 		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
-		render_mesh(program, vertex_array, &camera.transform, projection_matrix, mesh, &box_material);
+		
+		glm_quat(box.transform.rotation, glfwGetTime(), 0, 1, 0);
+
+		render_mesh(program, box.vao, &camera.transform, projection_matrix, &box);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
