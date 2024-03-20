@@ -6,7 +6,6 @@
 
 typedef struct PerspectiveCamera {
 	float fov;
-	float aspect_ratio;
 	float near;
 	float far;
 	Transform transform;

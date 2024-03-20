@@ -36,6 +36,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 			}
 			break;
 	}
+	
+	free_fly_camera_controller_on_key_event(free_fly_camera_controller, key, scancode, action, mods);
 }
 
 static void render_mesh(
@@ -91,13 +93,16 @@ int main(int argc, char **argv) {
 	opengl_error_detector_init();
 	
 	PerspectiveCamera camera;
-	free_fly_camera_controller = free_fly_camera_controller_new(&camera.transform);
-	
+	camera.fov = 90;
+	camera.near = 0.1;
+	camera.far = 1000;
 	camera.transform.position[0] = 0;
 	camera.transform.position[1] = 0;
 	camera.transform.position[2] = 2;
 	glm_quat_identity(camera.transform.rotation);
-		
+	
+	free_fly_camera_controller = free_fly_camera_controller_new(&camera.transform);
+	
 	Mesh *box_mesh = load_mesh("./meshes/box.obj");
 	Material box_material;
 
@@ -157,7 +162,7 @@ int main(int argc, char **argv) {
  
 		free_fly_camera_controller_update(free_fly_camera_controller, dt);
 		mat4 projection_matrix;
-		glm_perspective(glm_rad(camera.fov), (float) width / height, camera.near, camera.far, projection_matrix);
+		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
 		render_mesh(program, vertex_array, &camera.transform, projection_matrix, mesh, &box_material);
 
         glfwSwapBuffers(window);
