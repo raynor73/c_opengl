@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
 	box.vao = box_vao;
 	box.mesh = box_mesh;
 	box.material.texture = wooden_box_wall_texture;
+	glm_vec2_one(box.material.texture_scale);
 	glm_vec3_zero(box.transform.position);
 	box.transform.position[2] = -2;
 	glm_quat_identity(box.transform.rotation);
@@ -114,6 +115,8 @@ int main(int argc, char **argv) {
 	ground.vao = plane_vao;
 	ground.mesh = plane_mesh;
 	ground.material.texture = concrete_squares_texture;
+	ground.material.texture_scale[0] = 2;
+	ground.material.texture_scale[1] = 2;
 	glm_vec3_zero(ground.transform.position);
 	ground.transform.position[1] = -2;
 	glm_quat_identity(ground.transform.rotation);

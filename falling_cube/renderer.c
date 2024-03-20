@@ -18,6 +18,7 @@ void render_mesh(
     const GLint directional_light_color_location = glGetUniformLocation(program, "directional_light.color");
     const GLint directional_light_direction_location = glGetUniformLocation(program, "directional_light.direction");
     const GLint texture_uniform = glGetUniformLocation(program, "texture_uniform");
+    const GLint texture_scale_uniform = glGetUniformLocation(program, "texture_scale_uniform");
 		
 	mat4 mvp;
 	mat4 view_matrix;
@@ -47,6 +48,7 @@ void render_mesh(
 	glBindTexture(GL_TEXTURE_2D, game_object->material.texture);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(texture_uniform, 0);
+	glUniform2fv(texture_scale_uniform, 1, game_object->material.texture_scale);
 
 	glDrawElements(GL_TRIANGLES, game_object->mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
 	check_opengl_errors("rendering");
