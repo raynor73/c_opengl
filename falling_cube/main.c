@@ -138,8 +138,8 @@ int main(int argc, char **argv) {
 		
 		glm_quat(box.transform.rotation, glfwGetTime(), 0, 1, 0);
 
-		render_mesh(program, box.vao, &camera.transform, projection_matrix, &box);
-		render_mesh(program, ground.vao, &camera.transform, projection_matrix, &ground);
+		render_mesh(program, &camera.transform, projection_matrix, &box);
+		render_mesh(program, &camera.transform, projection_matrix, &ground);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -6,13 +6,12 @@
 
 void render_mesh(
 	GLuint program,
-	GLuint vao,
 	Transform *camera_transform,
 	mat4 projection_matrix,
 	GameObject *game_object
 ) {
 	glUseProgram(program);
-	glBindVertexArray(vao);
+	glBindVertexArray(game_object->vao);
 	
     const GLint mvp_location = glGetUniformLocation(program, "MVP");
     const GLint model_matrix_location = glGetUniformLocation(program, "model_matrix");

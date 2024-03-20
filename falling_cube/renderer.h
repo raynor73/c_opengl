@@ -8,7 +8,6 @@
 
 void render_mesh(
 	GLuint program,
-	GLuint vao,
 	Transform *camera_transform,
 	mat4 projection_matrix,
 	GameObject *game_object
