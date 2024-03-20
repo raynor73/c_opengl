@@ -37,7 +37,7 @@ void render_mesh(
 	glm_mat4_mul(view_matrix, m, model_view_matrix);
 	glm_mat4_mul(projection_matrix, model_view_matrix, mvp);
 	
-	vec3 directional_light_direction = { 0, 0, -1 };
+	vec3 directional_light_direction = { 0, -1, -1 };
 	glm_vec3_normalize(directional_light_direction);
 
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);

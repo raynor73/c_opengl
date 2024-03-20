@@ -94,8 +94,12 @@ int main(int argc, char **argv) {
     
     Mesh *box_mesh = load_mesh("./meshes/box.obj");
     GLuint box_vao = setup_vao_for_mesh(program, box_mesh);
+    
+    Mesh *plane_mesh = load_mesh("./meshes/planeUV.obj");
+    GLuint plane_vao = setup_vao_for_mesh(program, plane_mesh);
+    
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
-	//GLuint concrete_squares_texture = create_texture_from_file("./bitmaps/concrete_squares.bmp");
+	GLuint concrete_squares_texture = create_texture_from_file("./bitmaps/concrete_squares.bmp");
 	
 	GameObject box;
 	box.vao = box_vao;
@@ -105,6 +109,15 @@ int main(int argc, char **argv) {
 	box.transform.position[2] = -2;
 	glm_quat_identity(box.transform.rotation);
 	glm_vec3_one(box.transform.scale);
+    
+	GameObject ground;
+	ground.vao = plane_vao;
+	ground.mesh = plane_mesh;
+	ground.material.texture = concrete_squares_texture;
+	glm_vec3_zero(ground.transform.position);
+	ground.transform.position[1] = -2;
+	glm_quat_identity(ground.transform.rotation);
+	glm_vec3_one(ground.transform.scale);
     
     /* Loop until the user closes the window */
     double prev_time = glfwGetTime();
@@ -126,6 +139,7 @@ int main(int argc, char **argv) {
 		glm_quat(box.transform.rotation, glfwGetTime(), 0, 1, 0);
 
 		render_mesh(program, box.vao, &camera.transform, projection_matrix, &box);
+		render_mesh(program, ground.vao, &camera.transform, projection_matrix, &ground);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
