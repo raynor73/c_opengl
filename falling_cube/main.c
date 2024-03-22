@@ -18,6 +18,7 @@
 #include "free_fly_camera_controller.h"
 #include "renderer.h"
 #include "game_object.h"
+#include "bullet_physics.h"
 
 static FreeFlyCameraController *free_fly_camera_controller;
 
@@ -42,6 +43,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 int main(int argc, char **argv) {
+	some_wrapper_function();
+	
 	opengl_error_detector_init();
 	
 	PerspectiveCamera camera;
@@ -115,12 +118,14 @@ int main(int argc, char **argv) {
 	ground.vao = plane_vao;
 	ground.mesh = plane_mesh;
 	ground.material.texture = concrete_squares_texture;
-	ground.material.texture_scale[0] = 2;
-	ground.material.texture_scale[1] = 2;
+	ground.material.texture_scale[0] = 10;
+	ground.material.texture_scale[1] = 10;
 	glm_vec3_zero(ground.transform.position);
 	ground.transform.position[1] = -2;
 	glm_quat_identity(ground.transform.rotation);
-	glm_vec3_one(ground.transform.scale);
+	ground.transform.scale[0] = 10;
+	ground.transform.scale[1] = 1;
+	ground.transform.scale[2] = 10;
     
     /* Loop until the user closes the window */
     double prev_time = glfwGetTime();
