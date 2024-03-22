@@ -8,6 +8,9 @@ typedef struct btCollisionDispatcher btCollisionDispatcher;
 typedef struct btBroadphaseInterface btBroadphaseInterface;
 typedef struct btSequentialImpulseConstraintSolver btSequentialImpulseConstraintSolver;
 typedef struct btDiscreteDynamicsWorld btDiscreteDynamicsWorld;
+typedef struct btBoxShape btBoxShape;
+typedef struct btTransform btTransform;
+typedef struct btDefaultMotionState btDefaultMotionState;
 
 btDefaultCollisionConfiguration *btDefaultCollisionConfiguration_new(void);
 btCollisionDispatcher *btCollisionDispatcher_new(btDefaultCollisionConfiguration *collisionConfiguration);
@@ -20,5 +23,10 @@ btDiscreteDynamicsWorld *btDiscreteDynamicsWorld_new(
 	btDefaultCollisionConfiguration *collisionConfiguration
 );
 void btDiscreteDynamicsWorld_setGravity(btDiscreteDynamicsWorld *dynamicsWorld, vec3 gravity);
+btBoxShape *btBoxShape_new(vec3 boxHalfExtents);
+
+btTransform *btTransform_new(void);
+void btTransform_setIdentity(btTransform *transform);
+void btTransform_setOrigin(btTransform *transform, vec3 origin);
 
 #endif

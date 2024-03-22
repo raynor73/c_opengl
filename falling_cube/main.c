@@ -42,21 +42,21 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	free_fly_camera_controller_on_key_event(free_fly_camera_controller, key, scancode, action, mods);
 }
 
-static btDefaultCollisionConfiguration *collisionConfiguration;
-static btCollisionDispatcher *dispatcher;
-static btBroadphaseInterface *overlappingPairCache;
-static btSequentialImpulseConstraintSolver *solver;
-static btDiscreteDynamicsWorld *dynamicsWorld;
-
 int main(int argc, char **argv) {
-	collisionConfiguration = btDefaultCollisionConfiguration_new();
-	dispatcher = btCollisionDispatcher_new(collisionConfiguration);
-	overlappingPairCache = btDbvtBroadphase_new();
-	solver = btSequentialImpulseConstraintSolver_new();
-	dynamicsWorld = btDiscreteDynamicsWorld_new(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+	btDefaultCollisionConfiguration *collision_configuration = btDefaultCollisionConfiguration_new();
+	btCollisionDispatcher *dispatcher = btCollisionDispatcher_new(collision_configuration);
+	btBroadphaseInterface *overlapping_pair_cache = btDbvtBroadphase_new();
+	btSequentialImpulseConstraintSolver *solver = btSequentialImpulseConstraintSolver_new();
+	btDiscreteDynamicsWorld *dynamics_world = btDiscreteDynamicsWorld_new(dispatcher, overlapping_pair_cache, solver, collision_configuration);
 	vec3 gravity = { 0, -9.8, 0 };
-	btDiscreteDynamicsWorld_setGravity(dynamicsWorld, gravity);
+	btDiscreteDynamicsWorld_setGravity(dynamics_world, gravity);
 	
+	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
+	btBoxShape *ground_shape = btBoxShape_new(ground_shape_half_extents);
+	btTransform *ground_transform = btTransform_new();
+	btTransform_setIdentity(ground_transform);
+	vec3 origin = { 0, -2.5, 0 };
+	btTransform_setOrigin(ground_transform, origin);
 	
 	opengl_error_detector_init();
 	
