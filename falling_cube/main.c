@@ -42,8 +42,21 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	free_fly_camera_controller_on_key_event(free_fly_camera_controller, key, scancode, action, mods);
 }
 
+static btDefaultCollisionConfiguration *collisionConfiguration;
+static btCollisionDispatcher *dispatcher;
+static btBroadphaseInterface *overlappingPairCache;
+static btSequentialImpulseConstraintSolver *solver;
+static btDiscreteDynamicsWorld *dynamicsWorld;
+
 int main(int argc, char **argv) {
-	some_wrapper_function();
+	collisionConfiguration = btDefaultCollisionConfiguration_new();
+	dispatcher = btCollisionDispatcher_new(collisionConfiguration);
+	overlappingPairCache = btDbvtBroadphase_new();
+	solver = btSequentialImpulseConstraintSolver_new();
+	dynamicsWorld = btDiscreteDynamicsWorld_new(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+	vec3 gravity = { 0, -9.8, 0 };
+	btDiscreteDynamicsWorld_setGravity(dynamicsWorld, gravity);
+	
 	
 	opengl_error_detector_init();
 	

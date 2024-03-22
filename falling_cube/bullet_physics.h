@@ -1,15 +1,24 @@
 #ifndef ILAPIN_BULLET_PHYSICS_H
 #define ILAPIN_BULLET_PHYSICS_H
 
-#ifdef __cplusplus
-extern "C" {	
-#endif
+#include <cglm/cglm.h>
 
-//typedef struct 
-void some_wrapper_function(void);
+typedef struct btDefaultCollisionConfiguration btDefaultCollisionConfiguration;
+typedef struct btCollisionDispatcher btCollisionDispatcher;
+typedef struct btBroadphaseInterface btBroadphaseInterface;
+typedef struct btSequentialImpulseConstraintSolver btSequentialImpulseConstraintSolver;
+typedef struct btDiscreteDynamicsWorld btDiscreteDynamicsWorld;
 
-#ifdef __cplusplus
-}
-#endif
+btDefaultCollisionConfiguration *btDefaultCollisionConfiguration_new(void);
+btCollisionDispatcher *btCollisionDispatcher_new(btDefaultCollisionConfiguration *collisionConfiguration);
+btBroadphaseInterface *btDbvtBroadphase_new(void);
+btSequentialImpulseConstraintSolver *btSequentialImpulseConstraintSolver_new(void);
+btDiscreteDynamicsWorld *btDiscreteDynamicsWorld_new(
+	btCollisionDispatcher *dispatcher,
+	btBroadphaseInterface *overlappingPairCache,
+	btSequentialImpulseConstraintSolver *solver,
+	btDefaultCollisionConfiguration *collisionConfiguration
+);
+void btDiscreteDynamicsWorld_setGravity(btDiscreteDynamicsWorld *dynamicsWorld, vec3 gravity);
 
 #endif
