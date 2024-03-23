@@ -11,11 +11,14 @@ typedef struct btDiscreteDynamicsWorld btDiscreteDynamicsWorld;
 typedef struct btBoxShape btBoxShape;
 typedef struct btTransform btTransform;
 typedef struct btDefaultMotionState btDefaultMotionState;
+typedef struct btRigidBodyConstructionInfo btRigidBodyConstructionInfo;
+typedef struct btRigidBody btRigidBody;
 
 btDefaultCollisionConfiguration *btDefaultCollisionConfiguration_new(void);
 btCollisionDispatcher *btCollisionDispatcher_new(btDefaultCollisionConfiguration *collisionConfiguration);
 btBroadphaseInterface *btDbvtBroadphase_new(void);
 btSequentialImpulseConstraintSolver *btSequentialImpulseConstraintSolver_new(void);
+
 btDiscreteDynamicsWorld *btDiscreteDynamicsWorld_new(
 	btCollisionDispatcher *dispatcher,
 	btBroadphaseInterface *overlappingPairCache,
@@ -23,10 +26,16 @@ btDiscreteDynamicsWorld *btDiscreteDynamicsWorld_new(
 	btDefaultCollisionConfiguration *collisionConfiguration
 );
 void btDiscreteDynamicsWorld_setGravity(btDiscreteDynamicsWorld *dynamicsWorld, vec3 gravity);
+void btDiscreteDynamicsWorld_addRigidBody(btDiscreteDynamicsWorld *dynamicsWorld, void *body);
+
 btBoxShape *btBoxShape_new(vec3 boxHalfExtents);
 
 btTransform *btTransform_new(void);
 void btTransform_setIdentity(btTransform *transform);
 void btTransform_setOrigin(btTransform *transform, vec3 origin);
+
+btDefaultMotionState *btDefaultMotionState_new(btTransform *startTrans);
+btRigidBodyConstructionInfo *btRigidBodyConstructionInfo_new(float mass, void *motionState, void *collisionShape, vec3 localInertia);
+btRigidBody *btRigidBody_new(btRigidBodyConstructionInfo *constructionInfo);
 
 #endif

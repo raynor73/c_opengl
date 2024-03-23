@@ -58,6 +58,16 @@ int main(int argc, char **argv) {
 	vec3 origin = { 0, -2.5, 0 };
 	btTransform_setOrigin(ground_transform, origin);
 	
+	btDefaultMotionState* my_motion_state = btDefaultMotionState_new(ground_transform);
+	vec3 local_inertia = { 0, 0, 0 };
+	btRigidBodyConstructionInfo *rb_info = btRigidBodyConstructionInfo_new(0, my_motion_state, ground_shape, local_inertia);
+	btRigidBody *body = btRigidBody_new(rb_info);
+	
+	btDiscreteDynamicsWorld_addRigidBody(dynamics_world, body);
+	
+	
+	
+	// Old code starts here
 	opengl_error_detector_init();
 	
 	PerspectiveCamera camera;
