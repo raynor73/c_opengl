@@ -37,6 +37,10 @@ extern "C" {
 	void btDiscreteDynamicsWorld_addRigidBody(btDiscreteDynamicsWorld *dynamicsWorld, void *body) {
 		dynamicsWorld->addRigidBody(reinterpret_cast<btRigidBody *>(body));
 	}
+	
+	void btDiscreteDynamicsWorld_stepSimulation(btDiscreteDynamicsWorld *dynamicsWorld, float timeStep, int maxSubSteps) {
+		dynamicsWorld->stepSimulation(timeStep, maxSubSteps);
+	}
 
 	btBoxShape *btBoxShape_new(vec3 boxHalfExtents) {
 		return new btBoxShape(btVector3(boxHalfExtents[0], boxHalfExtents[1], boxHalfExtents[2]));

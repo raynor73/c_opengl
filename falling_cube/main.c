@@ -157,6 +157,8 @@ int main(int argc, char **argv) {
 		float dt = current_time - prev_time;
         prev_time = current_time;
 		
+		btDiscreteDynamicsWorld_stepSimulation(dynamics_world, dt, 10);
+		
 		int width, height;
         glfwGetFramebufferSize(window, &width, &height);
  

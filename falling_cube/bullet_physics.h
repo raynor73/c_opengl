@@ -27,6 +27,7 @@ btDiscreteDynamicsWorld *btDiscreteDynamicsWorld_new(
 );
 void btDiscreteDynamicsWorld_setGravity(btDiscreteDynamicsWorld *dynamicsWorld, vec3 gravity);
 void btDiscreteDynamicsWorld_addRigidBody(btDiscreteDynamicsWorld *dynamicsWorld, void *body);
+void btDiscreteDynamicsWorld_stepSimulation(btDiscreteDynamicsWorld *dynamicsWorld, float timeStep, int maxSubSteps);
 
 btBoxShape *btBoxShape_new(vec3 boxHalfExtents);
 
