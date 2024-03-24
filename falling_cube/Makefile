@@ -1,6 +1,8 @@
 SRC = $(shell find . -type f -name "*.c")
 OBJ = $(SRC:%.c=%.o)
 
+all: main
+
 main: $(OBJ) bullet_physics.o
 	g++ -g -Wall -o main $(OBJ) bullet_physics.o -lm `pkg-config --libs glib-2.0 glfw3 cglm assimp bullet`
 

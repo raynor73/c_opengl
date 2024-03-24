@@ -69,4 +69,31 @@ extern "C" {
 	btRigidBody *btRigidBody_new(btRigidBodyConstructionInfo *constructionInfo) {
 		return new btRigidBody(*reinterpret_cast<btRigidBody::btRigidBodyConstructionInfo *>(constructionInfo));
 	}
+	
+	btTransform *btRigidBody_getWorldTransform(void *body) {
+		return &reinterpret_cast<btRigidBody *>(body)->getWorldTransform();
+	}
+	
+	void btTransform_getOrigin(btTransform *transform, vec3 origin) {
+		auto bt_origin = transform->getOrigin();
+		origin[0] = bt_origin.x();
+		origin[1] = bt_origin.y();
+		origin[2] = bt_origin.z();
+	}
+	
+	void btTransform_getRotation(btTransform *transform, versor rotation) {
+		auto bt_rotation = transform->getRotation();
+		rotation[0] = bt_rotation.x();
+		rotation[1] = bt_rotation.y();
+		rotation[2] = bt_rotation.z();
+		rotation[3] = bt_rotation.w();
+	}
+	
+	void btCollisionShape_calculateLocalInertia(void *collisionShape, float mass, vec3 inertia) {
+		btVector3 btInertia;
+		reinterpret_cast<btCollisionShape *>(collisionShape)->calculateLocalInertia(mass, btInertia);
+		inertia[0] = btInertia.x();
+		inertia[1] = btInertia.y();
+		inertia[2] = btInertia.z();
+	}
 }

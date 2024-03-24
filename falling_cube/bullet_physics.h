@@ -30,13 +30,18 @@ void btDiscreteDynamicsWorld_addRigidBody(btDiscreteDynamicsWorld *dynamicsWorld
 void btDiscreteDynamicsWorld_stepSimulation(btDiscreteDynamicsWorld *dynamicsWorld, float timeStep, int maxSubSteps);
 
 btBoxShape *btBoxShape_new(vec3 boxHalfExtents);
+void btCollisionShape_calculateLocalInertia(void *collisionShape, float mass, vec3 inertia);
 
 btTransform *btTransform_new(void);
 void btTransform_setIdentity(btTransform *transform);
 void btTransform_setOrigin(btTransform *transform, vec3 origin);
+void btTransform_getOrigin(btTransform *transform, vec3 origin);
+void btTransform_getRotation(btTransform *transform, versor rotation);
 
 btDefaultMotionState *btDefaultMotionState_new(btTransform *startTrans);
 btRigidBodyConstructionInfo *btRigidBodyConstructionInfo_new(float mass, void *motionState, void *collisionShape, vec3 localInertia);
+
 btRigidBody *btRigidBody_new(btRigidBodyConstructionInfo *constructionInfo);
+btTransform *btRigidBody_getWorldTransform(void *body);
 
 #endif

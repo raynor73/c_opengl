@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
 	vec3 gravity = { 0, -9.8, 0 };
 	btDiscreteDynamicsWorld_setGravity(dynamics_world, gravity);
 	
+	// Ground Rigid Body creation start
 	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
 	btBoxShape *ground_shape = btBoxShape_new(ground_shape_half_extents);
 	btTransform *ground_transform = btTransform_new();
@@ -61,9 +62,28 @@ int main(int argc, char **argv) {
 	btDefaultMotionState* my_motion_state = btDefaultMotionState_new(ground_transform);
 	vec3 local_inertia = { 0, 0, 0 };
 	btRigidBodyConstructionInfo *rb_info = btRigidBodyConstructionInfo_new(0, my_motion_state, ground_shape, local_inertia);
-	btRigidBody *body = btRigidBody_new(rb_info);
+	btRigidBody *ground_rigid_body = btRigidBody_new(rb_info);
 	
-	btDiscreteDynamicsWorld_addRigidBody(dynamics_world, body);
+	btDiscreteDynamicsWorld_addRigidBody(dynamics_world, ground_rigid_body);
+	// Ground Rigid Body creation end
+
+	// Falling Box Rigid Body creation start
+	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
+	btBoxShape *falling_box_shape = btBoxShape_new(falling_box_half_extents);
+	btTransform *falling_box_transform = btTransform_new();
+	btTransform_setIdentity(falling_box_transform);
+	vec3 falling_box_origin = { 0, 0, -2 };
+	btTransform_setOrigin(falling_box_transform, falling_box_origin);
+	
+	btDefaultMotionState* falling_box_motion_state = btDefaultMotionState_new(falling_box_transform);
+	float falling_box_mass = 1;
+	vec3 falling_box_local_inertia = { 0, 0, 0 };
+	btCollisionShape_calculateLocalInertia(falling_box_shape, falling_box_mass, falling_box_local_inertia);
+	btRigidBodyConstructionInfo *falling_box_rb_info = btRigidBodyConstructionInfo_new(falling_box_mass, falling_box_motion_state, falling_box_shape, falling_box_local_inertia);
+	btRigidBody *falling_box_rigid_body = btRigidBody_new(falling_box_rb_info);
+	
+	btDiscreteDynamicsWorld_addRigidBody(dynamics_world, falling_box_rigid_body);
+	// Falling Box Rigid Body creation end
 	
 	
 	
@@ -94,7 +114,7 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    window = glfwCreateWindow(640, 480, "Assimp and Textures", NULL, NULL);
+    window = glfwCreateWindow(640, 480, "Falling Cube", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -157,7 +177,22 @@ int main(int argc, char **argv) {
 		float dt = current_time - prev_time;
         prev_time = current_time;
 		
+		
+		
+		// Bullet Physics start
 		btDiscreteDynamicsWorld_stepSimulation(dynamics_world, dt, 10);
+		
+		btTransform *bt_ground_transform = btRigidBody_getWorldTransform(ground_rigid_body);
+		btTransform_getOrigin(bt_ground_transform, ground.transform.position);		
+		btTransform_getRotation(bt_ground_transform, ground.transform.rotation);
+		
+		
+		btTransform *bt_falling_box_transform = btRigidBody_getWorldTransform(falling_box_rigid_body);
+		btTransform_getOrigin(bt_falling_box_transform, box.transform.position);		
+		btTransform_getRotation(bt_falling_box_transform, box.transform.rotation);
+		// Bullet Physics end
+		
+		
 		
 		int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -169,7 +204,7 @@ int main(int argc, char **argv) {
 		mat4 projection_matrix;
 		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
 		
-		glm_quat(box.transform.rotation, glfwGetTime(), 0, 1, 0);
+		//glm_quat(box.transform.rotation, glfwGetTime(), 0, 1, 0);
 
 		render_mesh(program, &camera.transform, projection_matrix, &box);
 		render_mesh(program, &camera.transform, projection_matrix, &ground);

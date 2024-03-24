@@ -94,24 +94,25 @@ void free_fly_camera_controller_on_key_event(FreeFlyCameraController *controller
 
 void free_fly_camera_controller_update(FreeFlyCameraController *controller, float dt) {
 	vec3 movement;
+	float velocity = 2;
 	if (controller->is_w_key_pressed) {
 		glm_quat_rotatev(controller->camera_transform->rotation, FORWARD, movement);
-		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_scale(movement, velocity * dt, movement);
 		glm_vec3_add(controller->camera_transform->position, movement, controller->camera_transform->position);
 	}
 	if (controller->is_s_key_pressed) {
 		glm_quat_rotatev(controller->camera_transform->rotation, FORWARD, movement);
-		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_scale(movement, velocity * dt, movement);
 		glm_vec3_sub(controller->camera_transform->position, movement, controller->camera_transform->position);
 	}
 	if (controller->is_a_key_pressed) {
 		glm_quat_rotatev(controller->camera_transform->rotation, RIGHT, movement);
-		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_scale(movement, velocity * dt, movement);
 		glm_vec3_sub(controller->camera_transform->position, movement, controller->camera_transform->position);
 	}
 	if (controller->is_d_key_pressed) {
 		glm_quat_rotatev(controller->camera_transform->rotation, RIGHT, movement);
-		glm_vec3_scale(movement, dt, movement);
+		glm_vec3_scale(movement, velocity * dt, movement);
 		glm_vec3_add(controller->camera_transform->position, movement, controller->camera_transform->position);
 	}
 }
