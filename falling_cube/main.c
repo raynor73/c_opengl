@@ -20,6 +20,7 @@
 #include "game_object.h"
 #include "bullet_physics.h"
 #include "physics.h"
+#include <glib.h>
 
 static FreeFlyCameraController *free_fly_camera_controller;
 
@@ -144,6 +145,15 @@ int main(int argc, char **argv) {
 	ground.transform.scale[1] = 1;
 	ground.transform.scale[2] = 10;
     
+    GArray *physics_to_graphics_transform_links = g_array_new(FALSE, FALSE, sizeof(PhysicsToGraphicsTransformLink));
+    PhysicsToGraphicsTransformLink link;
+    link.bt_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
+    link.transform = &box.transform;
+    g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
+    link.bt_transform = btRigidBody_getWorldTransform(ground_rigid_body->rigid_body);
+    link.transform = &ground.transform;
+    g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
+    
     /* Loop until the user closes the window */
     double prev_time = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
@@ -155,15 +165,15 @@ int main(int argc, char **argv) {
 		
 		// Bullet Physics start
 		btDiscreteDynamicsWorld_stepSimulation(dynamics_world->dynamics_world, dt, 10);
-		
-		btTransform *bt_ground_transform = btRigidBody_getWorldTransform(ground_rigid_body->rigid_body);
+		sync_physics_and_graphics_transforms(physics_to_graphics_transform_links);
+		/*btTransform *bt_ground_transform = btRigidBody_getWorldTransform(ground_rigid_body->rigid_body);
 		btTransform_getOrigin(bt_ground_transform, ground.transform.position);		
 		btTransform_getRotation(bt_ground_transform, ground.transform.rotation);
 		
 		
 		btTransform *bt_falling_box_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
 		btTransform_getOrigin(bt_falling_box_transform, box.transform.position);		
-		btTransform_getRotation(bt_falling_box_transform, box.transform.rotation);
+		btTransform_getRotation(bt_falling_box_transform, box.transform.rotation);*/
 		// Bullet Physics end
 		
 		
@@ -178,8 +188,6 @@ int main(int argc, char **argv) {
 		mat4 projection_matrix;
 		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
 		
-		//glm_quat(box.transform.rotation, glfwGetTime(), 0, 1, 0);
-
 		render_mesh(program, &camera.transform, projection_matrix, &box);
 		render_mesh(program, &camera.transform, projection_matrix, &ground);
 

@@ -94,7 +94,7 @@ void free_fly_camera_controller_on_key_event(FreeFlyCameraController *controller
 
 void free_fly_camera_controller_update(FreeFlyCameraController *controller, float dt) {
 	vec3 movement;
-	float velocity = 2;
+	float velocity = 10;
 	if (controller->is_w_key_pressed) {
 		glm_quat_rotatev(controller->camera_transform->rotation, FORWARD, movement);
 		glm_vec3_scale(movement, velocity * dt, movement);

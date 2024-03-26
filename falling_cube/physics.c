@@ -46,3 +46,11 @@ BoxRigidBody *create_box_rigid_body(float mass, vec3 half_extents, vec3 position
 	
 	return rigid_body;
 }
+
+void sync_physics_and_graphics_transforms(GArray *links) {
+	for (int i = 0; i < links->len; i++) {
+		PhysicsToGraphicsTransformLink *link = (PhysicsToGraphicsTransformLink *) &links->data[i * sizeof(PhysicsToGraphicsTransformLink)];
+		btTransform_getOrigin(link->bt_transform, link->transform->position);		
+		btTransform_getRotation(link->bt_transform, link->transform->rotation);
+	}
+}
