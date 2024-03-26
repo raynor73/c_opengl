@@ -49,23 +49,16 @@ int main(int argc, char **argv) {
 	vec3 gravity = { 0, -9.8, 0 };
 	btDiscreteDynamicsWorld_setGravity(dynamics_world->dynamics_world, gravity);
 	
-	// Ground Rigid Body creation start
 	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
 	vec3 origin = { 0, -2.5, 0 };
 	BoxRigidBody *ground_rigid_body = create_box_rigid_body(0, ground_shape_half_extents, origin);
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, ground_rigid_body->rigid_body);
-	// Ground Rigid Body creation end
 
-	// Falling Box Rigid Body creation start
 	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
 	vec3 falling_box_origin = { 0, 0, -2 };
 	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, falling_box_rigid_body->rigid_body);
-	// Falling Box Rigid Body creation end
-	
-	
-	
-	// Old code starts here
+
 	opengl_error_detector_init();
 	
 	PerspectiveCamera camera;
@@ -160,23 +153,9 @@ int main(int argc, char **argv) {
 		double current_time = glfwGetTime();
 		float dt = current_time - prev_time;
         prev_time = current_time;
-		
-		
-		
-		// Bullet Physics start
+
 		btDiscreteDynamicsWorld_stepSimulation(dynamics_world->dynamics_world, dt, 10);
 		sync_physics_and_graphics_transforms(physics_to_graphics_transform_links);
-		/*btTransform *bt_ground_transform = btRigidBody_getWorldTransform(ground_rigid_body->rigid_body);
-		btTransform_getOrigin(bt_ground_transform, ground.transform.position);		
-		btTransform_getRotation(bt_ground_transform, ground.transform.rotation);
-		
-		
-		btTransform *bt_falling_box_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
-		btTransform_getOrigin(bt_falling_box_transform, box.transform.position);		
-		btTransform_getRotation(bt_falling_box_transform, box.transform.rotation);*/
-		// Bullet Physics end
-		
-		
 		
 		int width, height;
         glfwGetFramebufferSize(window, &width, &height);
