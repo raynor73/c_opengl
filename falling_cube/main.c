@@ -19,6 +19,7 @@
 #include "renderer.h"
 #include "game_object.h"
 #include "bullet_physics.h"
+#include "physics.h"
 
 static FreeFlyCameraController *free_fly_camera_controller;
 
@@ -43,46 +44,22 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 int main(int argc, char **argv) {
-	btDefaultCollisionConfiguration *collision_configuration = btDefaultCollisionConfiguration_new();
-	btCollisionDispatcher *dispatcher = btCollisionDispatcher_new(collision_configuration);
-	btBroadphaseInterface *overlapping_pair_cache = btDbvtBroadphase_new();
-	btSequentialImpulseConstraintSolver *solver = btSequentialImpulseConstraintSolver_new();
-	btDiscreteDynamicsWorld *dynamics_world = btDiscreteDynamicsWorld_new(dispatcher, overlapping_pair_cache, solver, collision_configuration);
+	DynamicsWorld *dynamics_world = init_dynamic_world();	
 	vec3 gravity = { 0, -9.8, 0 };
-	btDiscreteDynamicsWorld_setGravity(dynamics_world, gravity);
+	btDiscreteDynamicsWorld_setGravity(dynamics_world->dynamics_world, gravity);
 	
 	// Ground Rigid Body creation start
 	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
-	btBoxShape *ground_shape = btBoxShape_new(ground_shape_half_extents);
-	btTransform *ground_transform = btTransform_new();
-	btTransform_setIdentity(ground_transform);
 	vec3 origin = { 0, -2.5, 0 };
-	btTransform_setOrigin(ground_transform, origin);
-	
-	btDefaultMotionState* my_motion_state = btDefaultMotionState_new(ground_transform);
-	vec3 local_inertia = { 0, 0, 0 };
-	btRigidBodyConstructionInfo *rb_info = btRigidBodyConstructionInfo_new(0, my_motion_state, ground_shape, local_inertia);
-	btRigidBody *ground_rigid_body = btRigidBody_new(rb_info);
-	
-	btDiscreteDynamicsWorld_addRigidBody(dynamics_world, ground_rigid_body);
+	BoxRigidBody *ground_rigid_body = create_box_rigid_body(0, ground_shape_half_extents, origin);
+	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, ground_rigid_body->rigid_body);
 	// Ground Rigid Body creation end
 
 	// Falling Box Rigid Body creation start
 	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
-	btBoxShape *falling_box_shape = btBoxShape_new(falling_box_half_extents);
-	btTransform *falling_box_transform = btTransform_new();
-	btTransform_setIdentity(falling_box_transform);
 	vec3 falling_box_origin = { 0, 0, -2 };
-	btTransform_setOrigin(falling_box_transform, falling_box_origin);
-	
-	btDefaultMotionState* falling_box_motion_state = btDefaultMotionState_new(falling_box_transform);
-	float falling_box_mass = 1;
-	vec3 falling_box_local_inertia = { 0, 0, 0 };
-	btCollisionShape_calculateLocalInertia(falling_box_shape, falling_box_mass, falling_box_local_inertia);
-	btRigidBodyConstructionInfo *falling_box_rb_info = btRigidBodyConstructionInfo_new(falling_box_mass, falling_box_motion_state, falling_box_shape, falling_box_local_inertia);
-	btRigidBody *falling_box_rigid_body = btRigidBody_new(falling_box_rb_info);
-	
-	btDiscreteDynamicsWorld_addRigidBody(dynamics_world, falling_box_rigid_body);
+	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
+	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, falling_box_rigid_body->rigid_body);
 	// Falling Box Rigid Body creation end
 	
 	
@@ -114,7 +91,7 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    window = glfwCreateWindow(640, 480, "Falling Cube", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "Falling Cube", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -141,9 +118,6 @@ int main(int argc, char **argv) {
     Mesh *box_mesh = load_mesh("./meshes/box.obj");
     GLuint box_vao = setup_vao_for_mesh(program, box_mesh);
     
-    Mesh *plane_mesh = load_mesh("./meshes/planeUV.obj");
-    GLuint plane_vao = setup_vao_for_mesh(program, plane_mesh);
-    
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
 	GLuint concrete_squares_texture = create_texture_from_file("./bitmaps/concrete_squares.bmp");
 	
@@ -158,8 +132,8 @@ int main(int argc, char **argv) {
 	glm_vec3_one(box.transform.scale);
     
 	GameObject ground;
-	ground.vao = plane_vao;
-	ground.mesh = plane_mesh;
+	ground.vao = box_vao;
+	ground.mesh = box_mesh;
 	ground.material.texture = concrete_squares_texture;
 	ground.material.texture_scale[0] = 10;
 	ground.material.texture_scale[1] = 10;
@@ -180,14 +154,14 @@ int main(int argc, char **argv) {
 		
 		
 		// Bullet Physics start
-		btDiscreteDynamicsWorld_stepSimulation(dynamics_world, dt, 10);
+		btDiscreteDynamicsWorld_stepSimulation(dynamics_world->dynamics_world, dt, 10);
 		
-		btTransform *bt_ground_transform = btRigidBody_getWorldTransform(ground_rigid_body);
+		btTransform *bt_ground_transform = btRigidBody_getWorldTransform(ground_rigid_body->rigid_body);
 		btTransform_getOrigin(bt_ground_transform, ground.transform.position);		
 		btTransform_getRotation(bt_ground_transform, ground.transform.rotation);
 		
 		
-		btTransform *bt_falling_box_transform = btRigidBody_getWorldTransform(falling_box_rigid_body);
+		btTransform *bt_falling_box_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
 		btTransform_getOrigin(bt_falling_box_transform, box.transform.position);		
 		btTransform_getRotation(bt_falling_box_transform, box.transform.rotation);
 		// Bullet Physics end
