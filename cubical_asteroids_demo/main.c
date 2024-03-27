@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
 	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
 	vec3 falling_box_origin = { 0, 0, -2 };
 	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
+	btRigidBody_setSleepingThresholds(falling_box_rigid_body, 0, 0);
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, falling_box_rigid_body->rigid_body);
 
 	controller = space_box_controller_new(falling_box_rigid_body->rigid_body);
@@ -188,6 +189,7 @@ int main(int argc, char **argv) {
         prev_time = current_time;
 
 		space_box_controller_update(controller);
+		btRigidBody_activate(falling_box_rigid_body->rigid_body);
 		btDiscreteDynamicsWorld_stepSimulation(dynamics_world->dynamics_world, dt, 10);
 		sync_physics_and_graphics_transforms(physics_to_graphics_transform_links);
 		

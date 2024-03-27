@@ -44,5 +44,7 @@ btRigidBodyConstructionInfo *btRigidBodyConstructionInfo_new(float mass, void *m
 btRigidBody *btRigidBody_new(btRigidBodyConstructionInfo *constructionInfo);
 btTransform *btRigidBody_getWorldTransform(void *body);
 void btRigidBody_applyCentralForce(void *body, vec3 force);
+void btRigidBody_setSleepingThresholds(void *body, float linear, float angular);
+void btRigidBody_activate(void *body);
 
 #endif

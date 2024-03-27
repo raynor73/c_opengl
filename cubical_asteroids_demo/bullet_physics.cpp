@@ -104,4 +104,12 @@ extern "C" {
 		btForce.setZ(force[2]);
 		reinterpret_cast<btRigidBody *>(body)->applyCentralForce(btForce);
 	}
+	
+	void btRigidBody_setSleepingThresholds(void *body, float linear, float angular) {
+		reinterpret_cast<btRigidBody *>(body)->setSleepingThresholds(linear, angular);
+	}
+	
+	void btRigidBody_activate(void *body) {
+		reinterpret_cast<btRigidBody *>(body)->activate();
+	}
 }
