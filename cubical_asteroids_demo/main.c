@@ -21,6 +21,9 @@
 #include "physics.h"
 #include <glib.h>
 #include <string.h>
+#include "space_box_controller.h"
+
+static SpaceBoxController *controller;
 
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
@@ -37,11 +40,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 			}
 			break;
 	}
+	
+	space_box_controller_on_key_event(controller, key, scancode, action, mods);
 }
 
 int main(int argc, char **argv) {
 	DynamicsWorld *dynamics_world = init_dynamic_world();	
-	vec3 gravity = { 0, -9.8, 0 };
+	vec3 gravity = { 0, 0, 0 };
 	btDiscreteDynamicsWorld_setGravity(dynamics_world->dynamics_world, gravity);
 	
 	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
@@ -53,6 +58,8 @@ int main(int argc, char **argv) {
 	vec3 falling_box_origin = { 0, 0, -2 };
 	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, falling_box_rigid_body->rigid_body);
+
+	controller = space_box_controller_new(falling_box_rigid_body->rigid_body);
 
 	opengl_error_detector_init();
 	
@@ -180,6 +187,7 @@ int main(int argc, char **argv) {
 		float dt = current_time - prev_time;
         prev_time = current_time;
 
+		space_box_controller_update(controller);
 		btDiscreteDynamicsWorld_stepSimulation(dynamics_world->dynamics_world, dt, 10);
 		sync_physics_and_graphics_transforms(physics_to_graphics_transform_links);
 		
@@ -192,7 +200,6 @@ int main(int argc, char **argv) {
 		vec3 camera_position = { 0, 1, 1.5 };
 		glm_quat_rotatev(box.transform.rotation, camera_position, camera_position);
 		glm_vec3_add(box.transform.position, camera_position, camera.transform.position);
-		//camera.transform = box.transform;
 		mat4 projection_matrix;
 		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
 		

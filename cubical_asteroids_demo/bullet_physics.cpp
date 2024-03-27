@@ -96,4 +96,12 @@ extern "C" {
 		inertia[1] = btInertia.y();
 		inertia[2] = btInertia.z();
 	}
+	
+	void btRigidBody_applyCentralForce(void *body, vec3 force) {
+		btVector3 btForce;
+		btForce.setX(force[0]);
+		btForce.setY(force[1]);
+		btForce.setZ(force[2]);
+		reinterpret_cast<btRigidBody *>(body)->applyCentralForce(btForce);
+	}
 }
