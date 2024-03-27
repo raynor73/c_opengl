@@ -112,4 +112,12 @@ extern "C" {
 	void btRigidBody_activate(void *body) {
 		reinterpret_cast<btRigidBody *>(body)->activate();
 	}
+	
+	void btRigidBody_applyTorque(void *body, vec3 torque) {
+		btVector3 btTorque;
+		btTorque.setX(torque[0]);
+		btTorque.setY(torque[1]);
+		btTorque.setZ(torque[2]);
+		reinterpret_cast<btRigidBody *>(body)->applyTorque(btTorque);
+	}
 }

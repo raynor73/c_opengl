@@ -128,10 +128,12 @@ void space_box_controller_update(SpaceBoxController *controller) {
 	
 	vec3 force;
 	glm_vec3_dup(FORWARD, force);
+	vec3 torque;
 
 	versor rigid_body_rotation;
 	btTransform_getRotation(bt_transform, rigid_body_rotation);
 	
+	// region WASD
 	if (controller->is_w_key_pressed) {
 		glm_quat_rotatev(rigid_body_rotation, force, force);
 		btRigidBody_applyCentralForce(controller->rigid_body, force);
@@ -142,6 +144,33 @@ void space_box_controller_update(SpaceBoxController *controller) {
 		glm_vec3_negate(force);
 		btRigidBody_applyCentralForce(controller->rigid_body, force);
 	}
+	// endregion
+	
+	// region QEZC
+	if (controller->is_z_key_pressed) {
+		glm_quat_rotatev(rigid_body_rotation, UP, torque);
+		btRigidBody_applyTorque(controller->rigid_body, torque);
+	}
+	
+	if (controller->is_c_key_pressed) {
+		glm_quat_rotatev(rigid_body_rotation, UP, torque);
+		glm_vec3_negate(torque);
+		btRigidBody_applyTorque(controller->rigid_body, torque);
+	}
+	// endregion
+	
+	// region RF
+	if (controller->is_f_key_pressed) {
+		glm_quat_rotatev(rigid_body_rotation, RIGHT, torque);
+		btRigidBody_applyTorque(controller->rigid_body, torque);
+	}
+	
+	if (controller->is_r_key_pressed) {
+		glm_quat_rotatev(rigid_body_rotation, RIGHT, torque);
+		glm_vec3_negate(torque);
+		btRigidBody_applyTorque(controller->rigid_body, torque);
+	}
+	// endregion
 }
 
 void space_box_controller_delete(SpaceBoxController *controller) {

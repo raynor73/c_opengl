@@ -202,6 +202,7 @@ int main(int argc, char **argv) {
 		vec3 camera_position = { 0, 1, 1.5 };
 		glm_quat_rotatev(box.transform.rotation, camera_position, camera_position);
 		glm_vec3_add(box.transform.position, camera_position, camera.transform.position);
+		glm_quat_copy(box.transform.rotation, camera.transform.rotation);
 		mat4 projection_matrix;
 		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
 		
