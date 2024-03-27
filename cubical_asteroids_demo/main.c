@@ -15,7 +15,6 @@
 #include "transform.h"
 #include "material.h"
 #include "camera.h"
-#include "free_fly_camera_controller.h"
 #include "renderer.h"
 #include "game_object.h"
 #include "bullet_physics.h"
@@ -23,14 +22,11 @@
 #include <glib.h>
 #include <string.h>
 
-static FreeFlyCameraController *free_fly_camera_controller;
-
 static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-	free_fly_camera_controller_on_cursor_position_updated(free_fly_camera_controller, xpos, ypos);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -41,8 +37,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 			}
 			break;
 	}
-	
-	free_fly_camera_controller_on_key_event(free_fly_camera_controller, key, scancode, action, mods);
 }
 
 int main(int argc, char **argv) {
@@ -70,8 +64,6 @@ int main(int argc, char **argv) {
 	camera.transform.position[1] = 0;
 	camera.transform.position[2] = 2;
 	glm_quat_identity(camera.transform.rotation);
-	
-	free_fly_camera_controller = free_fly_camera_controller_new(&camera.transform);
 	
 	GLFWwindow* window;
 
@@ -197,7 +189,10 @@ int main(int argc, char **argv) {
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
-		free_fly_camera_controller_update(free_fly_camera_controller, dt);
+		vec3 camera_position = { 0, 1, 1.5 };
+		glm_quat_rotatev(box.transform.rotation, camera_position, camera_position);
+		glm_vec3_add(box.transform.position, camera_position, camera.transform.position);
+		//camera.transform = box.transform;
 		mat4 projection_matrix;
 		glm_perspective(glm_rad(camera.fov), width / (float) height, camera.near, camera.far, projection_matrix);
 		
