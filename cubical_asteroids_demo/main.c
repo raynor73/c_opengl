@@ -57,7 +57,6 @@ int main(int argc, char **argv) {
 	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
 	vec3 falling_box_origin = { 0, 0, -2 };
 	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
-	btRigidBody_setSleepingThresholds(falling_box_rigid_body, 0, 0);
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, falling_box_rigid_body->rigid_body);
 
 	controller = space_box_controller_new(falling_box_rigid_body->rigid_body);
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
 		
 		Transform origin_transform;
 		glm_vec3_zero(origin_transform.position);
-		memcpy(origin_transform.rotation, camera.transform.rotation, sizeof(versor));
+		glm_quat_copy(camera.transform.rotation, origin_transform.rotation);
 		render_unlit_mesh(unlit_shader_program, &origin_transform, projection_matrix, &sky_sphere);
 		
         glClear(GL_DEPTH_BUFFER_BIT);
