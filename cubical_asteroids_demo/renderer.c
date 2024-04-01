@@ -28,7 +28,9 @@ void render_mesh(
 	vec3 look_at_coordinate;
 	glm_quat_rotatev(camera_transform->rotation, FORWARD, look_at_coordinate);
 	glm_vec3_add(look_at_coordinate, camera_transform->position, look_at_coordinate);
-	glm_lookat(camera_transform->position, look_at_coordinate, UP, view_matrix);
+	vec3 rotated_up;
+	glm_quat_rotatev(camera_transform->rotation, UP, rotated_up);
+	glm_lookat(camera_transform->position, look_at_coordinate, rotated_up, view_matrix);
 	
 	glm_translate(m, game_object->transform.position);
 	glm_quat_rotate(m, game_object->transform.rotation, m);
@@ -75,7 +77,9 @@ void render_unlit_mesh(
 	vec3 look_at_coordinate;
 	glm_quat_rotatev(camera_transform->rotation, FORWARD, look_at_coordinate);
 	glm_vec3_add(look_at_coordinate, camera_transform->position, look_at_coordinate);
-	glm_lookat(camera_transform->position, look_at_coordinate, UP, view_matrix);
+	vec3 rotated_up;
+	glm_quat_rotatev(camera_transform->rotation, UP, rotated_up);
+	glm_lookat(camera_transform->position, look_at_coordinate, rotated_up, view_matrix);
 	
 	glm_translate(m, game_object->transform.position);
 	glm_quat_rotate(m, game_object->transform.rotation, m);
