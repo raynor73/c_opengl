@@ -7,17 +7,18 @@
 #include "material.h"
 
 typedef struct GameObject {
-	Material material;
+	Material *material;
 	Mesh *mesh;
 	GLuint vao;
 	Transform transform;
 } GameObject;
 
-/*GameObject *game_object_new(
-	const char *mesh_path,
-	const char *
-	GLuint texture
+GameObject *game_object_new(
+	Material *material;
+	Mesh *mesh;
+	GLuint vao;
+	Transform transform;
 );
-void game_object_delete(GameObject *game_object);*/
+void game_object_delete(GameObject *game_object);
 
 #endif

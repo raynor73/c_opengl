@@ -47,10 +47,10 @@ void render_mesh(
 	glUniform3f(directional_light_color_location, 1, 1, 1);
 	glUniform3fv(directional_light_direction_location, 1, (const GLfloat *)  &directional_light_direction);
 	
-	glBindTexture(GL_TEXTURE_2D, game_object->material.texture);
+	glBindTexture(GL_TEXTURE_2D, game_object->material->texture);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(texture_uniform, 0);
-	glUniform2fv(texture_scale_uniform, 1, game_object->material.texture_scale);
+	glUniform2fv(texture_scale_uniform, 1, game_object->material->texture_scale);
 
 	glDrawElements(GL_TRIANGLES, game_object->mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
 	check_opengl_errors("rendering");
@@ -90,10 +90,10 @@ void render_unlit_mesh(
 	
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp[0]);
 	
-	glBindTexture(GL_TEXTURE_2D, game_object->material.texture);
+	glBindTexture(GL_TEXTURE_2D, game_object->material->texture);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(texture_uniform, 0);
-	glUniform2fv(texture_scale_uniform, 1, game_object->material.texture_scale);
+	glUniform2fv(texture_scale_uniform, 1, game_object->material->texture_scale);
 
 	glDrawElements(GL_TRIANGLES, game_object->mesh->number_of_indices, GL_UNSIGNED_SHORT, NULL);
 	check_opengl_errors("unlit rendering");

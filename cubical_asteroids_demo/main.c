@@ -29,8 +29,8 @@ static void error_callback(int error_code, const char* description) {
     error("Error: %d; %s\n", error_code, description);
 }
 
-static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-}
+/*static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+}*/
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	switch (key) {
@@ -45,9 +45,23 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 int main(int argc, char **argv) {
+	// region Init physics world
 	DynamicsWorld *dynamics_world = init_dynamic_world();	
 	vec3 gravity = { 0, 0, 0 };
 	btDiscreteDynamicsWorld_setGravity(dynamics_world->dynamics_world, gravity);
+	// endregion
+	
+	// region Init rigid bodies
+	const int number_of_asteriods_in_a_row = 10;
+	const float distance_between_asteroids = 1;
+	const float asteroid_mass = 1;
+	BoxRigidBody *asteroid_rigid_bodies[number_of_asteriods_in_a_row];
+	for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
+		vec3 asteroid_box_half_extents = { 0.5, 0.5, 0.5 };
+		vec3 asteroid_box_origin = { 0, i * (2 * asteroid_box_half_extents[2] + distance_between_asteroids), 0 };
+		asteroid_rigid_bodies[i] = create_box_rigid_body(asteroid_mass, asteroid_box_half_extents, asteroid_box_origin);
+		btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, asteroid_rigid_bodies[i]->rigid_body);
+	}
 	
 	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
 	vec3 origin = { 0, -2.5, 0 };
@@ -55,9 +69,10 @@ int main(int argc, char **argv) {
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, ground_rigid_body->rigid_body);
 
 	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
-	vec3 falling_box_origin = { 0, 0, -2 };
+	vec3 falling_box_origin = { 0, 0, 2 };
 	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
 	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, falling_box_rigid_body->rigid_body);
+	// endregion
 
 	controller = space_box_controller_new(falling_box_rigid_body->rigid_body);
 
@@ -67,9 +82,7 @@ int main(int argc, char **argv) {
 	camera.fov = 90;
 	camera.near = 0.1;
 	camera.far = 1000;
-	camera.transform.position[0] = 0;
-	camera.transform.position[1] = 0;
-	camera.transform.position[2] = 2;
+	glm_vec3_zero(camera.transform.position);
 	glm_quat_identity(camera.transform.rotation);
 	
 	GLFWwindow* window;
@@ -97,8 +110,8 @@ int main(int argc, char **argv) {
 
 	gladLoadGL((GLADloadfunc) glfwGetProcAddress);
 	glfwSetKeyCallback(window, key_callback);
-	glfwSetCursorPosCallback(window, cursor_position_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	/*glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);*/
 	glfwSwapInterval(1);
 	
 	glEnable(GL_CULL_FACE);
@@ -131,14 +144,35 @@ int main(int argc, char **argv) {
 	GLuint wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
 	GLuint concrete_squares_texture = create_texture_from_file("./bitmaps/concrete_squares.bmp");
 	GLuint sky_texture = create_texture_from_file("./bitmaps/2k_stars_milky_way.bmp");
+	GLuint asteroid_texture = create_texture_from_file("./bitmaps/ground_0010_color_1k.bmp");
 	// endregion
+	
+	// region Materials init
+	Material sky_material;
+	sky_material.texture = sky_texture;
+	glm_vec2_one(sky_material.texture_scale);
+	
+	Material wood_material;
+	wood_material.texture = wooden_box_wall_texture;
+	glm_vec2_one(wood_material.texture_scale);
+	
+	Material concrete_material;
+	concrete_material.texture = concrete_squares_texture;
+	concrete_material.texture_scale[0] = 10;
+	concrete_material.texture_scale[1] = 10;
+	
+	Material asteroid_material;
+	asteroid_material.texture = asteroid_texture;
+	glm_vec2_one(asteroid_material.texture_scale);
+	// endregion
+
+    GArray *physics_to_graphics_transform_links = g_array_new(FALSE, FALSE, sizeof(PhysicsToGraphicsTransformLink));
 	
 	// region Game Objects init
 	GameObject sky_sphere;
 	sky_sphere.vao = sky_sphere_vao;
 	sky_sphere.mesh = sky_sphere_mesh;
-	sky_sphere.material.texture = sky_texture;
-	glm_vec2_one(sky_sphere.material.texture_scale);
+	sky_sphere.material = &sky_material;
 	glm_vec3_zero(sky_sphere.transform.position);
 	glm_quat_identity(sky_sphere.transform.rotation);
 	sky_sphere.transform.scale[0] = 10;
@@ -148,8 +182,7 @@ int main(int argc, char **argv) {
 	GameObject box;
 	box.vao = box_vao;
 	box.mesh = box_mesh;
-	box.material.texture = wooden_box_wall_texture;
-	glm_vec2_one(box.material.texture_scale);
+	box.material = &wood_material;
 	glm_vec3_zero(box.transform.position);
 	box.transform.position[2] = -2;
 	glm_quat_identity(box.transform.rotation);
@@ -158,19 +191,28 @@ int main(int argc, char **argv) {
 	GameObject ground;
 	ground.vao = box_vao;
 	ground.mesh = box_mesh;
-	ground.material.texture = concrete_squares_texture;
-	ground.material.texture_scale[0] = 10;
-	ground.material.texture_scale[1] = 10;
+	ground.material = &concrete_material;
 	glm_vec3_zero(ground.transform.position);
 	ground.transform.position[1] = -2;
 	glm_quat_identity(ground.transform.rotation);
 	ground.transform.scale[0] = 10;
 	ground.transform.scale[1] = 1;
 	ground.transform.scale[2] = 10;
+	
+	GameObject *asteroids[number_of_asteriods_in_a_row];
+	for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
+		Transform transform;
+		glm_vec3_one(transform.scale);
+		PhysicsToGraphicsTransformLink link;
+		asteroids[i] = game_object_new(&asteroid_material, box_mesh, box_vao, transform);
+		
+		link.bt_transform = btRigidBody_getWorldTransform(asteroid_rigid_bodies[i]->rigid_body);
+		link.transform = &asteroids[i]->transform;
+		g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
+	}
 	// endregion
     
     // region Physics linking
-    GArray *physics_to_graphics_transform_links = g_array_new(FALSE, FALSE, sizeof(PhysicsToGraphicsTransformLink));
     PhysicsToGraphicsTransformLink link;
     link.bt_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
     link.transform = &box.transform;
@@ -214,6 +256,10 @@ int main(int argc, char **argv) {
 		
 		render_mesh(program, &camera.transform, projection_matrix, &box);
 		render_mesh(program, &camera.transform, projection_matrix, &ground);
+		
+		for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
+			render_mesh(program, &camera.transform, projection_matrix, asteroids[i]);
+		}
 
         glfwSwapBuffers(window);
         glfwPollEvents();
