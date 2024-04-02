@@ -16,6 +16,7 @@ typedef struct SpaceBoxController {
 	bool is_c_key_pressed;
 	bool is_r_key_pressed;
 	bool is_f_key_pressed;
+	bool is_end_key_pressed;
 	
 	btRigidBody *rigid_body;
 } SpaceBoxController;
@@ -35,6 +36,14 @@ SpaceBoxController *space_box_controller_new(btRigidBody *rigid_body) {
 
 void space_box_controller_on_key_event(SpaceBoxController *controller, int key, int scancode, int action, int mods) {
 	switch (key) {
+		case GLFW_KEY_END:
+			if (action == GLFW_PRESS) {
+				controller->is_end_key_pressed = true;
+			} else if (action == GLFW_RELEASE) {
+				controller->is_end_key_pressed = false;
+			}
+			break;
+		
 		// region WSAD
 		case GLFW_KEY_W:
 			if (action == GLFW_PRESS) {
@@ -132,6 +141,13 @@ void space_box_controller_update(SpaceBoxController *controller) {
 
 	versor rigid_body_rotation;
 	btTransform_getRotation(bt_transform, rigid_body_rotation);
+	
+	if (controller->is_end_key_pressed) {
+		vec3 zero_vector;
+		glm_vec3_zero(zero_vector);
+		btRigidBody_setLinearVelocity(controller->rigid_body, zero_vector);
+		btRigidBody_setAngularVelocity(controller->rigid_body, zero_vector);
+	}
 	
 	// region WASD
 	if (controller->is_w_key_pressed) {

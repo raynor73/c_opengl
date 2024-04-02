@@ -3,6 +3,8 @@
 
 #include <cglm/cglm.h>
 
+#define DISABLE_DEACTIVATION 4
+
 typedef struct btDefaultCollisionConfiguration btDefaultCollisionConfiguration;
 typedef struct btCollisionDispatcher btCollisionDispatcher;
 typedef struct btBroadphaseInterface btBroadphaseInterface;
@@ -47,5 +49,9 @@ void btRigidBody_applyCentralForce(void *body, vec3 force);
 void btRigidBody_applyTorque(void *body, vec3 torque);
 void btRigidBody_setSleepingThresholds(void *body, float linear, float angular);
 void btRigidBody_activate(void *body);
+void btRigidBody_setLinearVelocity(void *body, vec3 lin_vel);
+void btRigidBody_setAngularVelocity(void *body, vec3 ang_vel);
+
+void btCollisionObject_setActivationState(void *collisionObject, int newState);
 
 #endif

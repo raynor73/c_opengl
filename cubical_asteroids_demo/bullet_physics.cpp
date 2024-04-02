@@ -120,4 +120,24 @@ extern "C" {
 		btTorque.setZ(torque[2]);
 		reinterpret_cast<btRigidBody *>(body)->applyTorque(btTorque);
 	}
+	
+	void btCollisionObject_setActivationState(void *collisionObject, int newState) {
+		reinterpret_cast<btCollisionObject *>(collisionObject)->setActivationState(newState);
+	}
+	
+	void btRigidBody_setLinearVelocity(void *body, vec3 lin_vel) {
+		btVector3 btVelocity;
+		btVelocity.setX(lin_vel[0]);
+		btVelocity.setY(lin_vel[1]);
+		btVelocity.setZ(lin_vel[2]);
+		reinterpret_cast<btRigidBody *>(body)->setLinearVelocity(btVelocity);
+	}
+	
+	void btRigidBody_setAngularVelocity(void *body, vec3 ang_vel) {
+		btVector3 btVelocity;
+		btVelocity.setX(ang_vel[0]);
+		btVelocity.setY(ang_vel[1]);
+		btVelocity.setZ(ang_vel[2]);
+		reinterpret_cast<btRigidBody *>(body)->setAngularVelocity(btVelocity);
+	}
 }
