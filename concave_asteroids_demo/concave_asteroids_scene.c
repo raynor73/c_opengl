@@ -33,20 +33,17 @@ static GLuint program;
 static GLuint unlit_shader_program;
 
 static GLuint wooden_box_wall_texture;
-static GLuint concrete_squares_texture;
 static GLuint sky_texture;
 static GLuint asteroid_texture;
 
 static Material sky_material;
 static Material wood_material;
-static Material concrete_material;
 static Material asteroid_material;
 
 static GArray *physics_to_graphics_transform_links;
 
 static GameObject sky_sphere;
 static GameObject box;
-static GameObject ground;
 
 #define NUMBER_OF_ASTEROIDS_IN_A_ROW 10
 static const float distance_between_asteroids = 1;
@@ -80,8 +77,8 @@ void concave_asterodis_scene_start(void) {
 			for (int i = 0; i < NUMBER_OF_ASTEROIDS_IN_A_ROW; i++) {
 				vec3 asteroid_box_half_extents = { 0.5, 0.5, 0.5 };
 				vec3 asteroid_box_origin = { 
-					i * (2 * asteroid_box_half_extents[0] + distance_between_asteroids), 
-					j * (2 * asteroid_box_half_extents[1] + distance_between_asteroids), 
+					i * (2 * asteroid_box_half_extents[0] + distance_between_asteroids) - (2 * asteroid_box_half_extents[0] + distance_between_asteroids) * NUMBER_OF_ASTEROIDS_IN_A_ROW / 2, 
+					j * (2 * asteroid_box_half_extents[1] + distance_between_asteroids) - (2 * asteroid_box_half_extents[1] + distance_between_asteroids) * NUMBER_OF_ASTEROIDS_IN_A_ROW / 2, 
 					-k * (2 * asteroid_box_half_extents[2] + distance_between_asteroids)
 				};
 				int rigid_body_index = i + j * NUMBER_OF_ASTEROIDS_IN_A_ROW + k * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW;
@@ -92,11 +89,6 @@ void concave_asterodis_scene_start(void) {
 		}
 	}
 	
-	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
-	vec3 origin = { 0, -2.5, 0 };
-	BoxRigidBody *ground_rigid_body = create_box_rigid_body(0, ground_shape_half_extents, origin);
-	btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, ground_rigid_body->rigid_body);
-
 	vec3 falling_box_half_extents = { 0.5, 0.5, 0.5 };
 	vec3 falling_box_origin = { 0, 0, 2 };
 	BoxRigidBody *falling_box_rigid_body = create_box_rigid_body(1, falling_box_half_extents, falling_box_origin);
@@ -136,7 +128,6 @@ void concave_asterodis_scene_start(void) {
     
     // region Testures init
 	wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
-	concrete_squares_texture = create_texture_from_file("./bitmaps/concrete_squares.bmp");
 	sky_texture = create_texture_from_file("./bitmaps/2k_stars_milky_way.bmp");
 	asteroid_texture = create_texture_from_file("./bitmaps/ground_0010_color_1k.bmp");
 	// endregion
@@ -147,10 +138,6 @@ void concave_asterodis_scene_start(void) {
 	
 	wood_material.texture = wooden_box_wall_texture;
 	glm_vec2_one(wood_material.texture_scale);
-	
-	concrete_material.texture = concrete_squares_texture;
-	concrete_material.texture_scale[0] = 10;
-	concrete_material.texture_scale[1] = 10;
 	
 	asteroid_material.texture = asteroid_texture;
 	glm_vec2_one(asteroid_material.texture_scale);
@@ -176,16 +163,6 @@ void concave_asterodis_scene_start(void) {
 	glm_quat_identity(box.transform.rotation);
 	glm_vec3_one(box.transform.scale);
     
-	ground.vao = box_vao;
-	ground.mesh = box_mesh;
-	ground.material = &concrete_material;
-	glm_vec3_zero(ground.transform.position);
-	ground.transform.position[1] = -2;
-	glm_quat_identity(ground.transform.rotation);
-	ground.transform.scale[0] = 10;
-	ground.transform.scale[1] = 1;
-	ground.transform.scale[2] = 10;
-	
 	for (int k = 0; k < NUMBER_OF_ASTEROIDS_IN_A_ROW; k++) {
 		for (int j = 0; j < NUMBER_OF_ASTEROIDS_IN_A_ROW; j++) {
 			for (int i = 0; i < NUMBER_OF_ASTEROIDS_IN_A_ROW; i++) {
@@ -207,9 +184,6 @@ void concave_asterodis_scene_start(void) {
     PhysicsToGraphicsTransformLink link;
     link.bt_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
     link.transform = &box.transform;
-    g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
-    link.bt_transform = btRigidBody_getWorldTransform(ground_rigid_body->rigid_body);
-    link.transform = &ground.transform;
     g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
     // endregion
 }
@@ -240,7 +214,6 @@ void concave_asteroids_scene_update(GLFWwindow *window, float dt) {
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
 	render_mesh(program, &camera.transform, projection_matrix, &box);
-	render_mesh(program, &camera.transform, projection_matrix, &ground);
 	
 	for (int i = 0; i < NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW; i++) {
 		render_mesh(program, &camera.transform, projection_matrix, asteroids[i]);
