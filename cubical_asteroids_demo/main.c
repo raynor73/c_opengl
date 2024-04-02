@@ -55,12 +55,20 @@ int main(int argc, char **argv) {
 	const int number_of_asteriods_in_a_row = 10;
 	const float distance_between_asteroids = 1;
 	const float asteroid_mass = 1;
-	BoxRigidBody *asteroid_rigid_bodies[number_of_asteriods_in_a_row];
-	for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
-		vec3 asteroid_box_half_extents = { 0.5, 0.5, 0.5 };
-		vec3 asteroid_box_origin = { 0, i * (2 * asteroid_box_half_extents[2] + distance_between_asteroids), 0 };
-		asteroid_rigid_bodies[i] = create_box_rigid_body(asteroid_mass, asteroid_box_half_extents, asteroid_box_origin);
-		btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, asteroid_rigid_bodies[i]->rigid_body);
+	BoxRigidBody *asteroid_rigid_bodies[number_of_asteriods_in_a_row * number_of_asteriods_in_a_row];
+	for (int j = 0; j < number_of_asteriods_in_a_row; j++) {
+		for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
+			vec3 asteroid_box_half_extents = { 0.5, 0.5, 0.5 };
+			vec3 asteroid_box_origin = { 
+				i * (2 * asteroid_box_half_extents[0] + distance_between_asteroids), 
+				j * (2 * asteroid_box_half_extents[1] + distance_between_asteroids), 
+				0 
+			};
+			int rigid_body_index = i + j * number_of_asteriods_in_a_row;
+			asteroid_rigid_bodies[rigid_body_index] = create_box_rigid_body(asteroid_mass, asteroid_box_half_extents, asteroid_box_origin);
+			btCollisionObject_setActivationState(asteroid_rigid_bodies[rigid_body_index]->rigid_body, DISABLE_DEACTIVATION);
+			btDiscreteDynamicsWorld_addRigidBody(dynamics_world->dynamics_world, asteroid_rigid_bodies[rigid_body_index]->rigid_body);
+		}
 	}
 	
 	vec3 ground_shape_half_extents = { 5, 0.5, 5 };
@@ -200,16 +208,19 @@ int main(int argc, char **argv) {
 	ground.transform.scale[1] = 1;
 	ground.transform.scale[2] = 10;
 	
-	GameObject *asteroids[number_of_asteriods_in_a_row];
-	for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
-		Transform transform;
-		glm_vec3_one(transform.scale);
-		PhysicsToGraphicsTransformLink link;
-		asteroids[i] = game_object_new(&asteroid_material, box_mesh, box_vao, transform);
-		
-		link.bt_transform = btRigidBody_getWorldTransform(asteroid_rigid_bodies[i]->rigid_body);
-		link.transform = &asteroids[i]->transform;
-		g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
+	GameObject *asteroids[number_of_asteriods_in_a_row * number_of_asteriods_in_a_row];
+	for (int j = 0; j < number_of_asteriods_in_a_row; j++) {
+		for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
+			Transform transform;
+			glm_vec3_one(transform.scale);
+			PhysicsToGraphicsTransformLink link;
+			int asteroid_index = i + j * number_of_asteriods_in_a_row;
+			asteroids[asteroid_index] = game_object_new(&asteroid_material, box_mesh, box_vao, transform);
+			
+			link.bt_transform = btRigidBody_getWorldTransform(asteroid_rigid_bodies[asteroid_index]->rigid_body);
+			link.transform = &asteroids[asteroid_index]->transform;
+			g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
+		}
 	}
 	// endregion
     
@@ -258,7 +269,7 @@ int main(int argc, char **argv) {
 		render_mesh(program, &camera.transform, projection_matrix, &box);
 		render_mesh(program, &camera.transform, projection_matrix, &ground);
 		
-		for (int i = 0; i < number_of_asteriods_in_a_row; i++) {
+		for (int i = 0; i < number_of_asteriods_in_a_row * number_of_asteriods_in_a_row; i++) {
 			render_mesh(program, &camera.transform, projection_matrix, asteroids[i]);
 		}
 
