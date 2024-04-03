@@ -3,6 +3,15 @@
 
 #include <glad/gl.h>
 
-GLuint create_texture_from_file(const char *path);
+#define TEXTURE_BYTES_PER_PIXEL 4
+
+typedef struct Texture {
+	GLsizei width;
+	GLsizei height;
+	GLuint handle;
+} Texture;
+
+Texture create_texture_from_file(const char *path);
+Texture create_texture_from_memory(uint32_t width, uint32_t height, uint8_t *data);
 
 #endif

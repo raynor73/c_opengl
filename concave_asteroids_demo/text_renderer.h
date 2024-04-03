@@ -1,0 +1,6 @@
+#ifndef ILAPIN_TEXT_RENDERER_H
+#define ILAPIN_TEXT_RENDERER_H
+
+
+
+#endif

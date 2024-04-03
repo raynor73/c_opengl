@@ -11,4 +11,14 @@ typedef struct PerspectiveCamera {
 	Transform transform;
 } PerspectiveCamera;
 
+typedef struct OrthoCamera {
+	float top;
+	float right;
+	float bottom;
+	float left;
+	float near;
+	float far;
+	Transform transform;
+} OrthoCamera;
+
 #endif

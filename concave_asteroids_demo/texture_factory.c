@@ -4,8 +4,7 @@
 #include <stdlib.h>
 #include "opengl_error_detector.h"
 
-#define TEXTURE_BYTES_PER_PIXEL 4
-GLuint create_texture_from_file(const char *path) {
+Texture create_texture_from_file(const char *path) {
 	bmp_img bitmap;
 	bmp_img_read(&bitmap, path);
 	uint8_t *bitmap_data = (uint8_t *) malloc(bitmap.img_header.biWidth * bitmap.img_header.biHeight * TEXTURE_BYTES_PER_PIXEL);
@@ -59,5 +58,47 @@ GLuint create_texture_from_file(const char *path) {
 	bmp_img_free(&bitmap);
 	free(bitmap_data);
 	
-	return texture;
+	Texture texture_info = { 
+		bitmap.img_header.biWidth,
+        bitmap.img_header.biHeight,
+        texture
+    };
+	return texture_info;
+}
+
+Texture create_texture_from_memory(uint32_t width, uint32_t height, uint8_t *data) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        width,
+        height,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        data
+    );
+    
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+	
+	check_opengl_errors("create texture from data");
+	
+	Texture texture_info = { 
+		width,
+        height,
+        texture
+    };
+	return texture_info;
 }

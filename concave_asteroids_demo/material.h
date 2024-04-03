@@ -3,9 +3,10 @@
 
 #include <glad/gl.h>
 #include <cglm/cglm.h>
+#include "texture_factory.h"
 
 typedef struct Material {
-	GLuint texture;
+	Texture texture;
 	vec2 texture_scale;
 } Material;
 

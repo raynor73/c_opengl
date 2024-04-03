@@ -22,28 +22,33 @@
 #include <string.h>
 #include "space_box_controller.h"
 #include "concave_asteroids_scene.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 static SpaceBoxController *controller;
 
 static DynamicsWorld *dynamics_world;
 
 static PerspectiveCamera camera;
+static OrthoCamera ortho_camera; 
 
 static GLuint program;
 static GLuint unlit_shader_program;
 
-static GLuint wooden_box_wall_texture;
-static GLuint sky_texture;
-static GLuint asteroid_texture;
+static Texture wooden_box_wall_texture;
+static Texture sky_texture;
+static Texture asteroid_texture;
 
 static Material sky_material;
 static Material wood_material;
 static Material asteroid_material;
+static Material glyph_material;
 
 static GArray *physics_to_graphics_transform_links;
 
 static GameObject sky_sphere;
 static GameObject box;
+static GameObject glyph;
 
 #define NUMBER_OF_ASTEROIDS_IN_A_ROW 10
 static const float distance_between_asteroids = 1;
@@ -51,6 +56,9 @@ static const float asteroid_mass = 1;
 
 static GameObject *asteroids[NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW];
 static BoxRigidBody *asteroid_rigid_bodies[NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW];
+
+static FT_Library ft_library;
+static FT_Face ft_typeface;  
 
 void concave_asterodis_scene_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	switch (key) {
@@ -98,11 +106,18 @@ void concave_asterodis_scene_start(void) {
 	
 	controller = space_box_controller_new(falling_box_rigid_body->rigid_body);
 	
+	// region Cameras init
 	camera.fov = 90;
 	camera.near = 0.1;
 	camera.far = 1000;
 	glm_vec3_zero(camera.transform.position);
 	glm_quat_identity(camera.transform.rotation);
+	
+	ortho_camera.near = 0.1;
+	ortho_camera.far = 1000;
+	glm_vec3_zero(camera.transform.position);
+	glm_quat_identity(camera.transform.rotation);
+	// endregion
 	
 	// region Shaders init
 	char *vertex_shader_text = load_text_file("./shaders/vertex_shader.glsl");
@@ -124,6 +139,9 @@ void concave_asterodis_scene_start(void) {
     
     Mesh *sky_sphere_mesh = load_mesh("./meshes/sky_sphere.obj");
     GLuint sky_sphere_vao = setup_unlit_shader_vao_for_mesh(unlit_shader_program, sky_sphere_mesh);
+    
+    Mesh *vertical_plane_mesh = load_mesh("./meshes/vertical_plane.obj");
+    GLuint vertical_plane_vao = setup_unlit_shader_vao_for_mesh(unlit_shader_program, vertical_plane_mesh);
     // endregion
     
     // region Testures init
@@ -141,6 +159,8 @@ void concave_asterodis_scene_start(void) {
 	
 	asteroid_material.texture = asteroid_texture;
 	glm_vec2_one(asteroid_material.texture_scale);
+	
+	glm_vec2_one(glyph_material.texture_scale);
 	// endregion
 	
 	physics_to_graphics_transform_links = g_array_new(FALSE, FALSE, sizeof(PhysicsToGraphicsTransformLink));
@@ -162,6 +182,15 @@ void concave_asterodis_scene_start(void) {
 	box.transform.position[2] = -2;
 	glm_quat_identity(box.transform.rotation);
 	glm_vec3_one(box.transform.scale);
+	
+	glyph.vao = vertical_plane_vao;
+	glyph.mesh = vertical_plane_mesh;
+	glyph.material = &glyph_material;
+	glyph.transform.position[0] = 0;
+	glyph.transform.position[1] = 0;
+	glyph.transform.position[2] = -1;
+	glm_quat_identity(glyph.transform.rotation);
+	glm_vec3_one(glyph.transform.scale);
     
 	for (int k = 0; k < NUMBER_OF_ASTEROIDS_IN_A_ROW; k++) {
 		for (int j = 0; j < NUMBER_OF_ASTEROIDS_IN_A_ROW; j++) {
@@ -185,6 +214,45 @@ void concave_asterodis_scene_start(void) {
     link.bt_transform = btRigidBody_getWorldTransform(falling_box_rigid_body->rigid_body);
     link.transform = &box.transform;
     g_array_append_vals(physics_to_graphics_transform_links, &link, 1);
+    // endregion
+    
+    // region Font init
+	if (FT_Init_FreeType(&ft_library)) {
+		error("Failed to init FreeType library\n");
+	}
+	if (FT_New_Face(ft_library, "./fonts/Roboto-Regular.ttf", 0, &ft_typeface)) {
+		error("Failed to init Roboto Regular typeface\n");
+	}
+	if (FT_Set_Pixel_Sizes(ft_typeface, 0, 16)) {
+		error("Failed to set pixel size for typeface\n");
+	}
+	if (FT_Load_Char(ft_typeface, 'P', FT_LOAD_RENDER)) {
+		error("Failed to load character\n");
+	}
+	if (FT_Render_Glyph(ft_typeface->glyph, FT_RENDER_MODE_NORMAL)) {
+		error("Failed to render glyph\n");
+	}
+	//log_debug("glyph width: %d; rows: %d\n", ft_typeface->glyph->bitmap.width, ft_typeface->glyph->bitmap.rows);
+	uint8_t *glyph_data = (uint8_t *) malloc(ft_typeface->glyph->bitmap.width * ft_typeface->glyph->bitmap.rows * TEXTURE_BYTES_PER_PIXEL);
+	if (!glyph_data) {
+		error("Failed to allocate memory for glyph bitmap\n");
+	}
+	int index = 0;
+	for (int y = ft_typeface->glyph->bitmap.rows - 1; y >= 0; y--) {
+		for (int x = 0; x < ft_typeface->glyph->bitmap.width; x++) {
+			uint8_t value = ft_typeface->glyph->bitmap.buffer[index++];
+			glyph_data[(x + y * ft_typeface->glyph->bitmap.width) * TEXTURE_BYTES_PER_PIXEL] = value;
+			glyph_data[(x + y * ft_typeface->glyph->bitmap.width) * TEXTURE_BYTES_PER_PIXEL + 1] = value;
+			glyph_data[(x + y * ft_typeface->glyph->bitmap.width) * TEXTURE_BYTES_PER_PIXEL + 2] = value;
+			glyph_data[(x + y * ft_typeface->glyph->bitmap.width) * TEXTURE_BYTES_PER_PIXEL + 3] = value;
+		}
+	}
+	glyph_material.texture = create_texture_from_memory(
+		ft_typeface->glyph->bitmap.width,
+		ft_typeface->glyph->bitmap.rows,
+		glyph_data
+	);
+	free(glyph_data);
     // endregion
 }
 
@@ -218,4 +286,14 @@ void concave_asteroids_scene_update(GLFWwindow *window, float dt) {
 	for (int i = 0; i < NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW; i++) {
 		render_mesh(program, &camera.transform, projection_matrix, asteroids[i]);
 	}
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+	
+	glm_ortho(0, width - 1, 0, height - 1, ortho_camera.near, ortho_camera.far, projection_matrix);
+	// 10x12
+	glyph.transform.scale[0] = 10;
+	glyph.transform.scale[1] = 12;
+	glyph.transform.position[0] = 10;
+	glyph.transform.position[1] = 10;
+	render_unlit_mesh(unlit_shader_program, &ortho_camera.transform, projection_matrix, &glyph);
 }
