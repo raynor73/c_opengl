@@ -22,6 +22,9 @@
 #include <string.h>
 #include "space_box_controller.h"
 #include "concave_asteroids_scene.h"
+#include "text_renderer.h"
+
+static TextRenderer *text_renderer;
 
 static SpaceBoxController *controller;
 
@@ -132,7 +135,9 @@ void concave_asterodis_scene_start(void) {
     GLuint vertical_plane_vao = setup_unlit_shader_vao_for_mesh(unlit_shader_program, vertical_plane_mesh);
     // endregion
     
-    // region Testures init
+    text_renderer = text_renderer_new(unlit_shader_program, vertical_plane_mesh, vertical_plane_vao);
+    
+    // region Textures init
 	wooden_box_wall_texture = create_texture_from_file("./bitmaps/wood_box_wall.bmp");
 	sky_texture = create_texture_from_file("./bitmaps/2k_stars_milky_way.bmp");
 	asteroid_texture = create_texture_from_file("./bitmaps/ground_0010_color_1k.bmp");
@@ -227,11 +232,6 @@ void concave_asteroids_scene_update(GLFWwindow *window, float dt) {
 	
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
-	glm_ortho(0, width - 1, 0, height - 1, ortho_camera.near, ortho_camera.far, projection_matrix);
-	// 10x12
-	glyph.transform.scale[0] = 10;
-	glyph.transform.scale[1] = 12;
-	glyph.transform.position[0] = 10;
-	glyph.transform.position[1] = 10;
-	render_unlit_mesh(unlit_shader_program, &ortho_camera.transform, projection_matrix, &glyph);
+	vec2 text_position = GLM_VEC2_ZERO_INIT;
+	text_renderer_draw_text_line(text_renderer, width, height, text_position, "Hello world!");
 }
