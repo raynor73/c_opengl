@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    window = glfwCreateWindow(800, 600, "Falling Cube", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "Concave Asteroids", NULL, NULL);
     if (!window)
     {
         glfwTerminate();

@@ -23,6 +23,7 @@
 #include "space_box_controller.h"
 #include "concave_asteroids_scene.h"
 #include "text_renderer.h"
+#include "fps_counter.h"
 
 static TextRenderer *text_renderer;
 
@@ -55,6 +56,10 @@ static const float asteroid_mass = 1;
 static GameObject *asteroids[NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW];
 static BoxRigidBody *asteroid_rigid_bodies[NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW];
 
+#define FPS_STRING_BUFFER_SIZE 32
+static char fps_string_buffer[FPS_STRING_BUFFER_SIZE];
+
+static RingBuffer fps_counter_ring_buffer;
 
 void concave_asterodis_scene_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	switch (key) {
@@ -69,6 +74,8 @@ void concave_asterodis_scene_key_callback(GLFWwindow* window, int key, int scanc
 }
 
 void concave_asterodis_scene_start(void) {
+	ring_buffer_init(&fps_counter_ring_buffer, 100 * sizeof(float));
+	
 	// region Init physics world
 	dynamics_world = init_dynamic_world();	
 	vec3 gravity = { 0, 0, 0 };
@@ -232,6 +239,12 @@ void concave_asteroids_scene_update(GLFWwindow *window, float dt) {
 	
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
-	vec2 text_position = GLM_VEC2_ZERO_INIT;
-	text_renderer_draw_text_line(text_renderer, width, height, text_position, "Hello world!");
+	float fps = calculate_fps(&fps_counter_ring_buffer, dt);
+	memset(fps_string_buffer, 0, FPS_STRING_BUFFER_SIZE);
+	sprintf(fps_string_buffer, "FPS: %.1f", fps);
+	
+	vec2 text_position;
+	text_position[0] = 10;
+	text_position[1] = 10;
+	text_renderer_draw_text_line(text_renderer, width, height, text_position, fps_string_buffer);
 }
