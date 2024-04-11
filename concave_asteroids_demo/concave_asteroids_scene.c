@@ -56,6 +56,8 @@ static const float asteroid_mass = 1;
 static GameObject *asteroids[NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW];
 static BoxRigidBody *asteroid_rigid_bodies[NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW];
 
+static GameObject convex_asteroid;
+
 #define FPS_STRING_BUFFER_SIZE 32
 static char fps_string_buffer[FPS_STRING_BUFFER_SIZE];
 
@@ -140,6 +142,9 @@ void concave_asterodis_scene_start(void) {
     
     Mesh *vertical_plane_mesh = load_mesh("./meshes/vertical_plane.obj");
     GLuint vertical_plane_vao = setup_unlit_shader_vao_for_mesh(unlit_shader_program, vertical_plane_mesh);
+    
+    Mesh *convex_asteroid_mesh = load_mesh("./meshes/convex_asteroid.obj");
+    GLuint convex_asteroid_vao = setup_vao_for_mesh(program, convex_asteroid_mesh);
     // endregion
     
     text_renderer = text_renderer_new(unlit_shader_program, vertical_plane_mesh, vertical_plane_vao);
@@ -180,6 +185,15 @@ void concave_asterodis_scene_start(void) {
 	box.transform.position[2] = -2;
 	glm_quat_identity(box.transform.rotation);
 	glm_vec3_one(box.transform.scale);
+	
+	convex_asteroid.vao = convex_asteroid_vao;
+	convex_asteroid.mesh = convex_asteroid_mesh;
+	convex_asteroid.material = &asteroid_material;
+	convex_asteroid.transform.position[0] = 0;
+	convex_asteroid.transform.position[1] = 0;
+	convex_asteroid.transform.position[2] = 3;
+	glm_quat_identity(convex_asteroid.transform.rotation);
+	glm_vec3_one(convex_asteroid.transform.scale);
 	    
 	for (int k = 0; k < NUMBER_OF_ASTEROIDS_IN_A_ROW; k++) {
 		for (int j = 0; j < NUMBER_OF_ASTEROIDS_IN_A_ROW; j++) {
@@ -233,10 +247,13 @@ void concave_asteroids_scene_update(GLFWwindow *window, float dt) {
 	
 	render_mesh(program, &camera.transform, projection_matrix, &box);
 	
+	render_mesh(program, &camera.transform, projection_matrix, &convex_asteroid);
+	
 	for (int i = 0; i < NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW * NUMBER_OF_ASTEROIDS_IN_A_ROW; i++) {
 		render_mesh(program, &camera.transform, projection_matrix, asteroids[i]);
 	}
 	
+	// region FPS
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
 	float fps = calculate_fps(&fps_counter_ring_buffer, dt);
@@ -247,4 +264,5 @@ void concave_asteroids_scene_update(GLFWwindow *window, float dt) {
 	text_position[0] = 10;
 	text_position[1] = 10;
 	text_renderer_draw_text_line(text_renderer, width, height, text_position, fps_string_buffer);
+	// endregion
 }

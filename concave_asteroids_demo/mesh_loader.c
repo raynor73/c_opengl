@@ -7,7 +7,7 @@
 #define NUMBER_OF_VERTICES_IN_A_FACE 3
 
 Mesh *load_mesh(const char *path) {
-	const struct aiScene *scene = aiImportFile(path, aiProcessPreset_TargetRealtime_MaxQuality);
+	const struct aiScene *scene = aiImportFile(path, 0);
 	if (!scene) {
 		error("Error loading %s\n", path);
 	}
