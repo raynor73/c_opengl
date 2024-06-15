@@ -52,8 +52,8 @@ int main(int argc, char **argv) {
 	glfwSetKeyCallback(window, key_callback);
 	glfwSwapInterval(1);
 	
-	//glEnable(GL_CULL_FACE);
-	//glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
     
 	concave_asterodis_scene_start();

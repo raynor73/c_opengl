@@ -189,11 +189,13 @@ void concave_asterodis_scene_start(void) {
 	convex_asteroid.vao = convex_asteroid_vao;
 	convex_asteroid.mesh = convex_asteroid_mesh;
 	convex_asteroid.material = &asteroid_material;
-	convex_asteroid.transform.position[0] = 0;
+	convex_asteroid.transform.position[0] = 25;
 	convex_asteroid.transform.position[1] = 0;
 	convex_asteroid.transform.position[2] = 3;
 	glm_quat_identity(convex_asteroid.transform.rotation);
-	glm_vec3_one(convex_asteroid.transform.scale);
+	convex_asteroid.transform.scale[0] = 10;
+	convex_asteroid.transform.scale[1] = 10;
+	convex_asteroid.transform.scale[2] = 10;
 	    
 	for (int k = 0; k < NUMBER_OF_ASTEROIDS_IN_A_ROW; k++) {
 		for (int j = 0; j < NUMBER_OF_ASTEROIDS_IN_A_ROW; j++) {
